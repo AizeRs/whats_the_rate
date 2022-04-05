@@ -1,11 +1,12 @@
 from constants import *
 import data_api_functions
 import flask_login
-from flask import Flask, render_template, redirect, url_for
-from forms import LoginForm, RegisterForm
+from flask import Flask, render_template, redirect, session, url_for, request
+from forms import LoginForm, RegisterForm, SearchTickerForm, ReloadDataForm
 from flask_login import LoginManager, login_user
 from data import db_session
 from data.users import User
+import requests
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = SECRET_KEY
@@ -26,6 +27,93 @@ def load_user(user_id):
 def index():
     param = {}
     return render_template('index.html', **param)
+
+
+@app.route('/stocks', methods=['GET', 'POST'])
+def stocks():
+    form = SearchTickerForm()
+    if form.submit1.data:
+        return redirect(f'stocks/{form.ticker.data.upper()}')
+
+    param = {}
+    param['form'] = form
+    param['alphabet'] = ('abcdefg', 'hijklmn', 'opqrstu', 'vwxyz')
+    return render_template('available_stocks.html', **param)
+
+
+@app.route('/stocks/<string:letter>', methods=['GET', 'POST'])
+def available_stocks_for_letter(letter):
+    param = {}
+    param['letter'] = letter.upper()
+    param['stocks'] = []
+
+    if request.method == 'POST':
+        if request.form.get('reload_rate'):
+            ticker = request.form.get('reload_rate').split()[-1]
+            price = data_api_functions.ticker_price(ticker)
+            if price:
+                param['success'] = f'{ticker}_r'
+                data_api_functions.save_ticker_price(ticker, price[0])
+            else:
+                param['danger'] = f'{ticker}_r'
+        if request.form.get('add_stock'):
+            ticker = request.form.get('add_stock').split()[1]
+            param['success'] = f'{ticker}_a'
+            print(f'add_stock: {ticker}')
+
+    with open('list_of_tickers.txt', 'r', encoding='utf-8') as file:
+        stocks = file.read()
+        for line in stocks.split('\n')[1:]:
+            if not line.startswith(letter.upper()):
+                continue
+            if not line:
+                continue
+            ticker, stock, price = line.split(',')
+            param['stocks'].append({'ticker': ticker, 'stock': stock, 'price': price})
+    return render_template('available_stocks_for_letter.html', **param)
+
+
+@app.route('/crypto', methods=['GET', 'POST'])
+def crypto():
+    form = SearchTickerForm()
+    form2 = ReloadDataForm()
+    if form.submit1.data:
+        return redirect(f'crypto/{form.ticker.data}')
+    if form2.submit2.data:
+        data_api_functions.update_crypto_file()
+
+    param = {}
+    param['form'] = form
+    param['form2'] = form2
+    param['alphabet'] = ('abcdefg', 'hijklmn', 'opqrstu', 'vwxyz', '12345', '67890')
+    return render_template('available_crypto.html', **param)
+
+
+@app.route('/crypto/<string:letter>', methods=['GET', 'POST'])
+def available_crypto_for_letter(letter):
+    param = {}
+    param['letter'] = letter.upper()
+    param['crypto'] = []
+    with open('list_of_cryptocurrencies.txt', 'r', encoding='utf-8') as file:
+        crypto = file.read()
+        if letter.isupper():
+            print('upper')
+            for line in crypto.split('\n'):
+                if not line.startswith(letter):
+                    continue
+                if not line:
+                    continue
+                symbol, name, price = line.split(',')
+                param['crypto'].append({'symbol': symbol, 'name': name, 'price': price})
+        else:
+            for line in crypto.split('\n'):
+                if not line:
+                    continue
+                symbol, name, price = line.split(',')
+                if not name.startswith(letter):
+                    continue
+                param['crypto'].append({'symbol': symbol, 'name': name, 'price': price})
+    return render_template('available_crypto_for_letter.html', **param)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -83,6 +171,11 @@ def register():
 @app.route('/user')
 def user():
     return "user's account will be here"
+
+
+@app.route('/fiat')
+def fiat():
+    return "fiat currencies will be here"
 
 
 if __name__ == '__main__':
