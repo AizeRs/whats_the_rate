@@ -32,12 +32,20 @@ def index():
 @app.route('/stocks', methods=['GET', 'POST'])
 def stocks():
     form = SearchTickerForm()
-    if form.submit1.data:
-        return redirect(f'stocks/{form.ticker.data.upper()}')
-
+    form2 = ReloadDataForm()
     param = {}
     param['form'] = form
+    param['form2'] = form2
     param['alphabet'] = ('abcdefg', 'hijklmn', 'opqrstu', 'vwxyz')
+
+    if form.submit1.data:
+        return redirect(f'stocks/{form.ticker.data.upper()}')
+    if form2.submit2.data:
+        if data_api_functions.update_tickers_file():
+            param['reload'] = 1
+        else:
+            param['reload'] = 2
+
     return render_template('available_stocks.html', **param)
 
 
@@ -77,15 +85,19 @@ def available_stocks_for_letter(letter):
 def crypto():
     form = SearchTickerForm()
     form2 = ReloadDataForm()
-    if form.submit1.data:
-        return redirect(f'crypto/{form.ticker.data}')
-    if form2.submit2.data:
-        data_api_functions.update_crypto_file()
-
     param = {}
     param['form'] = form
     param['form2'] = form2
     param['alphabet'] = ('abcdefg', 'hijklmn', 'opqrstu', 'vwxyz', '12345', '67890')
+
+    if form.submit1.data:
+        return redirect(f'crypto/{form.ticker.data}')
+    if form2.submit2.data:
+        if data_api_functions.update_crypto_file():
+            param['reload'] = 1
+        else:
+            param['reload'] = 2
+
     return render_template('available_crypto.html', **param)
 
 

@@ -195,7 +195,6 @@ ADRE,Invesco BLDRS Emerging Markets 50 ADR Index Fund,No price data
 ADRT,Ault Disruptive Technologies Corp,No price data
 ADRT-U,Ault Disruptive Technologies Corp - Units (1 Ord Share & 3/4 War),No price data
 ADRT-WS,Ault Disruptive Technologies Corp - Warrants (01/01/9999),No price data
-ADS,Bread Financial Holdings Inc,No price data
 ADS-W,Alliance Data Systems Corporation ExDistribution When Issued,No price data
 ADSE,Ads-Tec Energy Plc,No price data
 ADSEW,Ads-Tec Energy Plc - Warrants (22/12/2026),No price data
@@ -1093,8 +1092,8 @@ AZZ,AZZ Inc,No price data
 B,Barnes Group Inc,40.1600
 BA,Boeing Company,191.1800
 BAB,Invesco Taxable Municipal Bond ETF,No price data
-BABA,Alibaba Group Holding Ltd,No price data
-BAC,Bank Of America Corp,No price data
+BABA,Alibaba Group Holding Ltd,117.5400
+BAC,Bank Of America Corp,40.7900
 BAC-P-B,Bank Of America Corp,No price data
 BAC-P-E,Bank Of America Corp,No price data
 BAC-P-K,Bank Of America Corp,No price data
@@ -1275,6 +1274,7 @@ BFAC-WS,Battery Future Acquisition Corp - Warrants (01/01/9999),No price data
 BFAM,Bright Horizons Family Solutions Inc,No price data
 BFC,Bank First Corp,No price data
 BFEB,Innovator U.S. Equity Buffer ETF - February,No price data
+BFH,Bread Financial Holdings Inc,No price data
 BFI,BurgerFi International Inc,No price data
 BFIIW,BurgerFi International Inc - Warrants (16/12/2025),No price data
 BFIN,Bankfinancial Corp,No price data
@@ -5249,6 +5249,7 @@ HCM,HUTCHMED (China) Ltd,No price data
 HCMA,Hcm Acquisition Corp - Class A,No price data
 HCMAU,Hcm Acquisition Corp - Units (1 Ord Class A & 1/2 War),No price data
 HCMAW,Hcm Acquisition Corp - Warrants (20/01/2027),No price data
+HCN,Welltower Inc,No price data
 HCNE,Jaws Hurricane Acquisition Corp - Class A,No price data
 HCNEU,Jaws Hurricane Acquisition Corp - Units (1 Ord Share Class A & 1/4 War),No price data
 HCNEW,Jaws Hurricane Acquisition Corp - Warrants (26/03/2026),No price data
@@ -6286,7 +6287,10 @@ JFR,Nuveen Floating Rate Income Fund,No price data
 JFU,9F Inc,No price data
 JFWD,Jacob Forward ETF,No price data
 JG,Aurora Mobile Ltd,No price data
+JGGC,Jaguar Global Growth Corp I - Class A,No price data
+JGGCR,Jaguar Global Growth Corp I,No price data
 JGGCU,Jaguar Global Growth Corp I - Units (1 Ord Class A 1 Right & 1/2 War),No price data
+JGGCW,Jaguar Global Growth Corp I - Warrants (01/01/2027),No price data
 JGH,Nuveen Global High Income Fund,No price data
 JGLD,Amplify Pure Junior Gold Miners ETF,No price data
 JHAA,Nuveen Corporate Income 2023 Target Term Fund,No price data
@@ -7587,6 +7591,7 @@ MTAL,Metals Acquisition Corp - Class A,No price data
 MTAL-U,Metals Acquisition Corp - Units (1 Ord Share Class A & 1/3 War),No price data
 MTAL-WS,Metals Acquisition Corp - Warrants (01/01/9999),No price data
 MTB,M & T Bank Corp,No price data
+MTB-P-H,M & T Bank Corp,No price data
 MTBC,CareCloud Inc,No price data
 MTBCO,CareCloud Inc,No price data
 MTBCP,CareCloud Inc,No price data
@@ -8102,6 +8107,7 @@ NUS,Nu Skin Enterprises Inc - Class A,No price data
 NUSA,NUVEEN ENHANCED YIELD 1-5 YEAR U.S. AGGREGATE BOND ETF ,No price data
 NUSC,Nuveen ESG Small-Cap ETF,No price data
 NUSI,Nationwide Nasdaq-100 Risk-Managed Income ETF,No price data
+NUTX,Nutex Health Inc,No price data
 NUV,Nuveen Municipal Value Fund Inc,No price data
 NUVA,Nuvasive Inc,No price data
 NUVB,Nuvation Bio Inc - Class A,No price data
@@ -8205,7 +8211,6 @@ OAK-P-B,Oaktree Capital Group LLC,No price data
 OALC,OneAscent Large Cap Core ETF,No price data
 OAS,Oasis Petroleum Inc - New,No price data
 OB,Outbrain Inc,No price data
-OBAS,Optibase,No price data
 OBCI,Ocean Bio-Chem Inc,No price data
 OBE,Obsidian Energy Ltd,No price data
 OBLG,Oblong Inc,No price data
@@ -9369,7 +9374,9 @@ RAAS,Cloopen Group Holding Ltd,No price data
 RAAX,VanEck Inflation Allocation ETF,No price data
 RACB,Research Alliance Corp II - Class A,No price data
 RACE,Ferrari N.V.,No price data
+RACY,Relativity Acquisition Corp - Class A,No price data
 RACYU,Relativity Acquisition Corp - Units (1 Ord Class A & 1 War),No price data
+RACYW,Relativity Acquisition Corp - Warrants(10/02/2027),No price data
 RAD,Rite Aid Corp,No price data
 RADA,Rada Electronic Industries,No price data
 RADI,Radius Global Infrastructure Inc - Class A,No price data
@@ -10664,6 +10671,7 @@ STER,Sterling Check Corp,No price data
 STET,ST Energy Transition I Ltd - Class A,No price data
 STET-U,ST Energy Transition I Ltd - Units (1 Ord Class A & 1/2 War),No price data
 STET-WS,ST Energy Transition I Ltd - Warrants (02/12/2026),No price data
+STEW,SRH Total Return Fund Inc,No price data
 STG,Sunlands Technology Group,No price data
 STGW,Stagwell Inc - Class A,No price data
 STIM,Neuronetics Inc,No price data
@@ -12009,6 +12017,7 @@ WAVSU,Western Acquisition Ventures Corp - Unit (1 Ordinary share & 1 Wrt),No pri
 WB,Weibo Corp,No price data
 WBA,Walgreens Boots Alliance Inc,No price data
 WBAT,WisdomTree Battery Value Chain and Innovation Fund,No price data
+WBDWV,Warner Bros Discovery Inc Com Ser A,No price data
 WBEV,Winc Inc,No price data
 WBIF,WBI BullBear Value 3000 ETF,No price data
 WBIG,WBI BullBear Yield 3000 ETF,No price data
@@ -12127,8 +12136,8 @@ WLL,Whiting Petroleum Corp (New),No price data
 WLMS,Williams Industrial Services Group Inc,No price data
 WLTG,WealthTrust DBS Long Term Growth ETF,No price data
 WLTH,LifeGoal Wealth Builder ETF,No price data
-WLY,John Wiley & Sons Inc,No price data
-WLYB,John Wiley & Sons Inc,No price data
+WLY,John Wiley & Sons Inc - Class A,No price data
+WLYB,John Wiley & Sons Inc - Class B,No price data
 WM,Waste Management Inc,No price data
 WMB,Williams Cos Inc,No price data
 WMC,Western Asset Mortgage Capital Corp,No price data
@@ -12513,77 +12522,4 @@ ZYNE,Zynerba Pharmaceuticals Inc,No price data
 ZYXI,Zynex Inc,No price data
 ZZK,,No price data
 ZZZ,TEST TICKER FOR UTP,No price data
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

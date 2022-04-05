@@ -30,6 +30,19 @@
 <br>
 {% endfor %}
 
+<div style="text-align: center;">
+    <h3>Обновить список акций (цены от этого не зависят)</h3>
+    {% if reload == 1 %}
+    <button type="button" class="btn btn-success">Обновить</button>
+    {% elif reload == 2 %}
+    <button type="button" class="btn btn-danger">Обновить</button>
+    {% else %}
+    <form action="" method="post" novalidate>
+        {{ form2.submit2(class="btn btn-primary", type="submit", value="Обновить") }}
+    </form>
+    {% endif %}
+</div>
+
 </body>
 
 {% endblock %}

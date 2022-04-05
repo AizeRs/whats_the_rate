@@ -44,14 +44,17 @@ def list_of_currencies():
 
 # UPDATE LIST OF TICKERS FILE
 def update_tickers_file():
-    CSV_URL = f'https://www.alphavantage.co/query?function=LISTING_STATUS&apikey={ALPHAVANTAGE_APIKEY}'
-    with requests.Session() as s:
-        download = s.get(CSV_URL)
-        decoded_content = download.content.decode('utf-8')
-        cr = csv.reader(decoded_content.splitlines(), delimiter=',')
-        my_list = list(cr)
-    lines = []
-    old_data = {}
+    try:
+        CSV_URL = f'https://www.alphavantage.co/query?function=LISTING_STATUS&apikey={ALPHAVANTAGE_APIKEY}'
+        with requests.Session() as s:
+            download = s.get(CSV_URL)
+            decoded_content = download.content.decode('utf-8')
+            cr = csv.reader(decoded_content.splitlines(), delimiter=',')
+            my_list = list(cr)
+        lines = []
+        old_data = {}
+    except Exception as e:
+        return False
     try:
         with open('list_of_tickers.txt', 'r') as file_in:
             if file_in:
@@ -66,8 +69,11 @@ def update_tickers_file():
         for row in my_list:
             lines.append(
                 f'{row[0]},{row[1]},No price data\n')
+    if not lines:
+        return False
     with open('list_of_tickers.txt', 'w') as file_out:
         file_out.writelines(lines)
+    return True
 
 
 # SAVE PRICE FOR A TICKER IN LIST FILE
@@ -80,3 +86,5 @@ def save_ticker_price(ticker, price):
             lines.append(f'{line}\n')
     with open('list_of_tickers.txt', 'w') as file_out:
         file_out.writelines(lines)
+
+
