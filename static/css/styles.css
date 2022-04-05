@@ -1,0 +1,22 @@
+h1 {
+    font: italic 16px/2 cursive;
+    text-align: center;
+}
+h3 {
+    font: italic 16px/2 cursive;
+}
+.btn-dark {
+    position: fixed;
+    right: 2%;
+    top: 90%;
+    z-index: 1;
+}
+.list-group-item-centered {
+    align-self: center;
+}
+.modal-title {
+    color: #de0000;
+}
+.btn-danger{
+    background-color: #de0000;
+}
