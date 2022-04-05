@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+
+<html lang="en">
+{% extends "base.html" %}
+{% block content %}
+<head>
+    <meta charset="UTF-8">
+    <title>{{ letter }} · Доступные акции · What's the rate </title>
+</head>
+
+<a class="btn btn-dark" href="{{ url_for('stocks') }}" role="button">Вернуться к поиску</a>
+
+<div class="modal fade" id="errModal" tabindex="-1" aria-labelledby="ModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="eModalLabel">Превышена частота запросов</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <h1>Максимальная частота обновлений - 5 в минуту. Подождите немного и затем обновите страницу</h1>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<body>
+<h1>Список доступных акций ({{ letter }})</h1>
+<ul class="list-group list-group gap-3">
+    {% if stocks %}
+    {% for pair in stocks %}
+    <form action="" method="post">
+        <ul class="list-group list-group-horizontal" id="#{{ pair['ticker'] }}">
+            <li class="list-group-item">{{ pair['ticker'] }}</li>
+            <li class="list-group-item">{{ pair['stock'] }}</li>
+            <li class="list-group-item">{{ pair['price'] }}</li>
+            <li class="list-group-item">
+                {% if success == pair['ticker'] + "_r" %}
+                <input class="btn btn-success btn-sm" type="submit" value="Обновить цену {{ pair['ticker'] }}"
+                       name="reload_rate"/>
+                {% elif danger == pair['ticker'] + "_r" %}
+                <input class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#errModal"
+                       type="button" value="Обновить цену {{ pair['ticker'] }}"
+                       name="reload_rate"/>
+                {% else %}
+                <input class="btn btn-secondary btn-sm" type="submit" value="Обновить цену {{ pair['ticker'] }}"
+                       name="reload_rate"/>
+                {% endif %}
+            </li>
+            {% if current_user.is_authenticated == True %}
+            <li class="list-group-item">
+                {% if success == pair['ticker'] + "_a" %}
+                <input class="btn btn-success btn-sm" type="submit" value="Добавить {{ pair['ticker'] }} в портфель"
+                       name="add_stock"/>
+                {% elif danger == pair['ticker'] + "_a" %}
+                <input class="btn btn-danger btn-sm" type="submit" value="Добавить {{ pair['ticker'] }} в портфель"
+                       name="add_stock"/>
+                {% else %}
+                <input class="btn btn-secondary btn-sm" type="submit" value="Добавить {{ pair['ticker'] }} в портфель"
+                       name="add_stock"/>
+                {% endif %}
+            </li>
+            {% endif %}
+        </ul>
+    </form>
+    {% endfor %}
+    {% else %}
+    <div style="text-align: center;"><h3>Ничего не найдено</h3></div>
+    {% endif %}
+</ul>
+</body>
+
+{% endblock %}
+</html>

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+
+<html lang="en">
+{% extends "base.html" %}
+{% block content %}
+<head>
+    <meta charset="UTF-8">
+    <title>Доступные акции · What's the rate</title>
+</head>
+<body>
+<h1>Доступные акции</h1>
+<br>
+<br>
+<div style="text-align: center;"><h3>Поиск по тикеру</h3></div>
+<form action="" method="post" novalidate>
+    <div class="input-group mb-3 mx-auto" style="width: 450px;">
+        {{ form.ticker(class="form-control", type="text", placeholder="Введите тикер или его начало") }}
+        {{ form.submit1(class="btn btn-outline-secondary", type="submit") }}
+    </div>
+</form>
+<div style="text-align: center;"><h3>Списки тикеров по первой букве</h3></div>
+{% for line in alphabet %}
+<ul class="list-group list-group-horizontal-sm d-flex justify-content-center">
+    {% for letter in line %}
+    <a href="stocks/{{ letter }}">
+        <li class="list-group-item ">{{ letter }}</li>
+    </a>
+    {% endfor %}
+</ul>
+<br>
+{% endfor %}
+
+</body>
+
+{% endblock %}
+</html>
