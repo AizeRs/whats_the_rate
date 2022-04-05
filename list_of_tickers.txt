@@ -1091,7 +1091,7 @@ AZUL,Azul S.A.,No price data
 AZYO,Aziyo Biologics Inc - Class A,No price data
 AZZ,AZZ Inc,No price data
 B,Barnes Group Inc,40.1600
-BA,Boeing Company,190.5000
+BA,Boeing Company,191.1800
 BAB,Invesco Taxable Municipal Bond ETF,No price data
 BABA,Alibaba Group Holding Ltd,No price data
 BAC,Bank Of America Corp,No price data
@@ -12513,6 +12513,7 @@ ZYNE,Zynerba Pharmaceuticals Inc,No price data
 ZYXI,Zynex Inc,No price data
 ZZK,,No price data
 ZZZ,TEST TICKER FOR UTP,No price data
+
 
 
 
