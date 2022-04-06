@@ -18,36 +18,48 @@ def ticker_price(ticker):
 
 # UPDATE CRYPTOCURRENCIES FILE
 def update_crypto_file():
-    lines = []
-    response = requests.get(
-        f'https://data.messari.io/api/v2/assets?fields=slug,symbol,'
-        f'metrics/market_data/price_usd&limit=500&x-messari-api-key={MESSARI_APIKEY}').json()
-    if 'error_code' in response['status'].keys():
-        return False
-    for elem in response['data']:
-        if elem["symbol"] and elem["slug"] and elem["metrics"]["market_data"]["price_usd"]:
-            lines.append(
-                f'{elem["symbol"].upper()},{elem["slug"].lower()},{elem["metrics"]["market_data"]["price_usd"]}\n')
-    with open('list_of_cryptocurrencies.txt', 'w') as file_out:
-        file_out.writelines(lines)
+    try:
+        lines = []
+        response = requests.get(
+            f'https://data.messari.io/api/v2/assets?fields=slug,symbol,'
+            f'metrics/market_data/price_usd&limit=500&x-messari-api-key={MESSARI_APIKEY}').json()
+        if 'error_code' in response['status'].keys():
+            return False
+        for elem in response['data']:
+            if elem["symbol"] and elem["slug"] and elem["metrics"]["market_data"]["price_usd"]:
+                lines.append(
+                    f'{elem["symbol"].upper()},{elem["slug"].lower()},{elem["metrics"]["market_data"]["price_usd"]}\n')
+        with open('list_of_cryptocurrencies.txt', 'w') as file_out:
+            file_out.writelines(lines)
         return True
+    except Exception as e:
+        print(e)
+        return False
 
 
-# GET LIST OF CURRENCIES (NOT CRYPTO)
-def list_of_currencies():
-    data = requests.get(f'https://free.currconv.com/api/v7/currencies?apiKey={CURRONCV_APIKEY}').json()['results']
-    currencies = {}
-    for key in data.keys():
-        currencies[data[key]['id']] = data[key]['currencyName']
-    return currencies
+# UPDATE FILE WITH FIAT CURRENCIES
+def update_currencies_file():
+    try:
+        names = requests.get(f'https://openexchangerates.org/api/currencies.json?app_id={OER_APIKEY}').json()
+        prices = requests.get(f'https://openexchangerates.org/api/latest.json?app_id={OER_APIKEY}').json()['rates']
+        if not (names and prices):
+            return False
+        with open('list_of_fiat.txt', 'w', encoding='utf-8') as file:
+            for currency in names.keys():
+                if currency in prices.keys():
+                    file.write(f'{currency},{names[currency]},{prices[currency]}\n')
+        return True
+    except Exception as e:
+        print(e)
+        return False
 
 
 # UPDATE LIST OF TICKERS FILE
 def update_tickers_file():
     try:
-        CSV_URL = f'https://www.alphavantage.co/query?function=LISTING_STATUS&apikey={ALPHAVANTAGE_APIKEY}'
+        csv_url = f'https://www.alphavantage.co/query?function=LISTING_STATUS&apikey={ALPHAVANTAGE_APIKEY}'
         with requests.Session() as s:
-            download = s.get(CSV_URL)
+            download = s.get(csv_url)
             decoded_content = download.content.decode('utf-8')
             cr = csv.reader(decoded_content.splitlines(), delimiter=',')
             my_list = list(cr)
@@ -78,13 +90,18 @@ def update_tickers_file():
 
 # SAVE PRICE FOR A TICKER IN LIST FILE
 def save_ticker_price(ticker, price):
-    lines = []
-    with open('list_of_tickers.txt', 'r') as file_in:
-        for line in file_in.read().split('\n'):
-            if line.split(',')[0] == ticker:
-                line = f'{line.split(",")[0]},{line.split(",")[1]},{price}'
-            lines.append(f'{line}\n')
-    with open('list_of_tickers.txt', 'w') as file_out:
-        file_out.writelines(lines)
+    try:
+        lines = []
+        with open('list_of_tickers.txt', 'r') as file_in:
+            for line in file_in.read().split('\n'):
+                if line.split(',')[0] == ticker:
+                    line = f'{line.split(",")[0]},{line.split(",")[1]},{price}'
+                lines.append(f'{line}\n')
+        with open('list_of_tickers.txt', 'w') as file_out:
+            file_out.writelines(lines)
+        return True
+    except Exception as e:
+        print(e)
+        return False
 
-
+print(update_currencies_file())

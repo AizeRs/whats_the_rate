@@ -9174,7 +9174,7 @@ PTNR,Partner Communications Company,No price data
 PTOC,Pine Technology Acquisition Corp - Class A,No price data
 PTOCU,Pine Technology Acquisition Corp - Units (1 Ord Share Class A & 1/3 War),No price data
 PTOCW,Pine Technology Acquisition Corp - Warrants (31/03/2028),No price data
-PTON,Peloton Interactive Inc - Class A,No price data
+PTON,Peloton Interactive Inc - Class A,26.1500
 PTPI,Petros Pharmaceuticals Inc,No price data
 PTR,PetroChina Co. Ltd,No price data
 PTRA,Proterra Inc,No price data
@@ -12522,4 +12522,5 @@ ZYNE,Zynerba Pharmaceuticals Inc,No price data
 ZYXI,Zynex Inc,No price data
 ZZK,,No price data
 ZZZ,TEST TICKER FOR UTP,No price data
+
 

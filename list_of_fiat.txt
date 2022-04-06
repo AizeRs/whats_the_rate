@@ -1,0 +1,169 @@
+AED,United Arab Emirates Dirham,3.673005
+AFN,Afghan Afghani,88.05285
+ALL,Albanian Lek,111.23635
+AMD,Armenian Dram,484.986668
+ANG,Netherlands Antillean Guilder,1.801955
+AOA,Angolan Kwanza,443.995
+ARS,Argentine Peso,111.716892
+AUD,Australian Dollar,1.32076
+AWG,Aruban Florin,1.8
+AZN,Azerbaijani Manat,1.7
+BAM,Bosnia-Herzegovina Convertible Mark,1.793584
+BBD,Barbadian Dollar,2
+BDT,Bangladeshi Taka,86.211958
+BGN,Bulgarian Lev,1.792894
+BHD,Bahraini Dinar,0.377054
+BIF,Burundian Franc,2051.535576
+BMD,Bermudan Dollar,1
+BND,Brunei Dollar,1.358922
+BOB,Bolivian Boliviano,6.884008
+BRL,Brazilian Real,4.6525
+BSD,Bahamian Dollar,1
+BTC,Bitcoin,2.22553e-05
+BTN,Bhutanese Ngultrum,75.759042
+BWP,Botswanan Pula,11.518994
+BYN,Belarusian Ruble,3.259573
+BZD,Belize Dollar,2.015301
+CAD,Canadian Dollar,1.249516
+CDF,Congolese Franc,1999.86262
+CHF,Swiss Franc,0.933186
+CLF,Chilean Unit of Account (UF),0.028581
+CLP,Chilean Peso,788.5
+CNH,Chinese Yuan (Offshore),6.368877
+CNY,Chinese Yuan,6.3626
+COP,Colombian Peso,3739.29938
+CRC,Costa Rican Colón,655.220081
+CUC,Cuban Convertible Peso,1
+CUP,Cuban Peso,25.75
+CVE,Cape Verdean Escudo,99.95
+CZK,Czech Republic Koruna,22.393001
+DJF,Djiboutian Franc,177.996474
+DKK,Danish Krone,6.813305
+DOP,Dominican Peso,54.951536
+DZD,Algerian Dinar,142.723489
+EGP,Egyptian Pound,18.2986
+ERN,Eritrean Nakfa,15.000003
+ETB,Ethiopian Birr,51.398788
+EUR,Euro,0.916028
+FJD,Fijian Dollar,2.08335
+FKP,Falkland Islands Pound,0.764205
+GBP,British Pound Sterling,0.764205
+GEL,Georgian Lari,3.1
+GGP,Guernsey Pound,0.764205
+GHS,Ghanaian Cedi,7.548952
+GIP,Gibraltar Pound,0.764205
+GMD,Gambian Dalasi,53.8
+GNF,Guinean Franc,8925.750485
+GTQ,Guatemalan Quetzal,7.678881
+GYD,Guyanaese Dollar,209.186606
+HKD,Hong Kong Dollar,7.83845
+HNL,Honduran Lempira,24.54163
+HRK,Croatian Kuna,6.9136
+HTG,Haitian Gourde,107.485072
+HUF,Hungarian Forint,346.433173
+IDR,Indonesian Rupiah,14363.65
+ILS,Israeli New Sheqel,3.222518
+IMP,Manx pound,0.764205
+INR,Indian Rupee,75.82981
+IQD,Iraqi Dinar,1459.316098
+IRR,Iranian Rial,42350
+ISK,Icelandic Króna,129.52
+JEP,Jersey Pound,0.764205
+JMD,Jamaican Dollar,153.571633
+JOD,Jordanian Dinar,0.709
+JPY,Japanese Yen,123.8756
+KES,Kenyan Shilling,115.27
+KGS,Kyrgystani Som,94.294853
+KHR,Cambodian Riel,4048.360764
+KMF,Comorian Franc,451.750094
+KPW,North Korean Won,900
+KRW,South Korean Won,1217.64246
+KWD,Kuwaiti Dinar,0.304831
+KYD,Cayman Islands Dollar,0.833165
+KZT,Kazakhstani Tenge,465.19519
+LAK,Laotian Kip,11836.42823
+LBP,Lebanese Pound,1511.95319
+LKR,Sri Lankan Rupee,299.947762
+LRD,Liberian Dollar,152.549994
+LSL,Lesotho Loti,14.64792
+LYD,Libyan Dinar,4.671651
+MAD,Moroccan Dirham,9.729606
+MDL,Moldovan Leu,18.347399
+MGA,Malagasy Ariary,4041.956914
+MKD,Macedonian Denar,56.456562
+MMK,Myanma Kyat,1777.880726
+MNT,Mongolian Tugrik,2897.751396
+MOP,Macanese Pataca,8.071433
+MRU,Mauritanian Ouguiya,36.39
+MUR,Mauritian Rupee,44.85
+MVR,Maldivian Rufiyaa,15.46
+MWK,Malawian Kwacha,816.483415
+MXN,Mexican Peso,20.0414
+MYR,Malaysian Ringgit,4.215
+MZN,Mozambican Metical,63.875002
+NAD,Namibian Dollar,14.69
+NGN,Nigerian Naira,416.44007
+NIO,Nicaraguan Córdoba,35.782676
+NOK,Norwegian Krone,8.743106
+NPR,Nepalese Rupee,121.214432
+NZD,New Zealand Dollar,1.43869
+OMR,Omani Rial,0.385006
+PAB,Panamanian Balboa,1
+PEN,Peruvian Nuevo Sol,3.699478
+PGK,Papua New Guinean Kina,3.523062
+PHP,Philippine Peso,51.367002
+PKR,Pakistani Rupee,186.169049
+PLN,Polish Zloty,4.253782
+PYG,Paraguayan Guarani,6904.288854
+QAR,Qatari Rial,3.641
+RON,Romanian Leu,4.5279
+RSD,Serbian Dinar,107.83362
+RUB,Russian Ruble,83.011604
+RWF,Rwandan Franc,1017.116899
+SAR,Saudi Riyal,3.751135
+SBD,Solomon Islands Dollar,8.012841
+SCR,Seychellois Rupee,14.415273
+SDG,Sudanese Pound,447.5
+SEK,Swedish Krona,9.431336
+SGD,Singapore Dollar,1.359012
+SHP,Saint Helena Pound,0.764205
+SLL,Sierra Leonean Leone,11770.500077
+SOS,Somali Shilling,578.442061
+SRD,Surinamese Dollar,20.744
+SSP,South Sudanese Pound,130.26
+STD,São Tomé and Príncipe Dobra (pre-2018),21443.240504
+STN,São Tomé and Príncipe Dobra,22.6
+SVC,Salvadoran Colón,8.747996
+SYP,Syrian Pound,2512
+SZL,Swazi Lilangeni,14.651402
+THB,Thai Baht,33.6
+TJS,Tajikistani Somoni,12.503184
+TMT,Turkmenistani Manat,3.5
+TND,Tunisian Dinar,2.9705
+TOP,Tongan Pa'anga,2.248565
+TRY,Turkish Lira,14.7381
+TTD,Trinidad and Tobago Dollar,6.786019
+TWD,New Taiwan Dollar,28.7088
+TZS,Tanzanian Shilling,2322
+UAH,Ukrainian Hryvnia,29.395805
+UGX,Ugandan Shilling,3559.492152
+USD,United States Dollar,1
+UYU,Uruguayan Peso,41.394415
+UZS,Uzbekistan Som,11368.92247
+VES,Venezuelan Bolívar Soberano,4.41325
+VND,Vietnamese Dong,22867.5
+VUV,Vanuatu Vatu,113.148302
+WST,Samoan Tala,2.603668
+XAF,CFA Franc BEAC,600.874777
+XAG,Silver Ounce,0.04133946
+XAU,Gold Ounce,0.00052048
+XCD,East Caribbean Dollar,2.70255
+XDR,Special Drawing Rights,0.721519
+XOF,CFA Franc BCEAO,600.874777
+XPD,Palladium Ounce,0.00044435
+XPF,CFP Franc,109.31118
+XPT,Platinum Ounce,0.00103255
+YER,Yemeni Rial,250.249937
+ZAR,South African Rand,14.6571
+ZMW,Zambian Kwacha,17.562513
+ZWL,Zimbabwean Dollar,322
