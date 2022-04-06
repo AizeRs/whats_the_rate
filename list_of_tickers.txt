@@ -1,4 +1,4 @@
-symbol,name,No price data
+symbol,name,price data
 A,Agilent Technologies Inc,No price data
 AA,Alcoa Corp,No price data
 AAA,AAF FIRST PRIORITY CLO BOND ETF ,No price data
