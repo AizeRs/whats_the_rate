@@ -103,5 +103,3 @@ def save_ticker_price(ticker, price):
     except Exception as e:
         print(e)
         return False
-
-print(update_currencies_file())

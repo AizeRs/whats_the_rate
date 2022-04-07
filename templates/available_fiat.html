@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+
+<html lang="en">
+{% extends "base.html" %}
+{% block content %}
+<head>
+    <meta charset="UTF-8">
+    <title>Доступные криптовалюты · What's the rate</title>
+</head>
+<body>
+<h1>Доступные фиатные валюты</h1>
+<br>
+<br>
+<div style="text-align: center;"><h3>Поиск по названию</h3></div>
+<form action="" method="post" novalidate>
+    <div class="input-group mb-3 mx-auto" style="width: 700px;">
+        {{ form.ticker(class="form-control", type="text",
+        placeholder="Введите символ заглавными буквами или название прописными буквами") }}
+        {{ form.submit1(class="btn btn-outline-secondary", type="submit") }}
+    </div>
+</form>
+<div class="d-grid gap-2 col-6 mx-auto">
+    <a class="btn btn-primary mx-auto" role="button" href="fiat/main">Основные валюты</a>
+    <a class="btn btn-primary mx-auto" role="button" href="fiat/all">Все валюты</a>
+</div>
+
+
+<div style="text-align: center;">
+    <h3>Обновить список валют и цены</h3>
+    {% if reload == 1 %}
+    <button type="button" class="btn btn-success">Обновить</button>
+    {% elif reload == 2 %}
+    <button type="button" class="btn btn-danger">Обновить</button>
+    {% else %}
+    <form action="" method="post" novalidate>
+        {{ form2.submit2(class="btn btn-primary", type="submit", value="Обновить") }}
+    </form>
+    {% endif %}
+</div>
+
+</body>
+
+{% endblock %}
+</html>

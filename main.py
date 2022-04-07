@@ -67,7 +67,6 @@ def available_stocks_for_letter(letter):
         if request.form.get('add_stock'):
             ticker = request.form.get('add_stock').split()[1]
             param['success'] = f'{ticker}_a'
-            print(f'add_stock: {ticker}')
 
     with open('list_of_tickers.txt', 'r', encoding='utf-8') as file:
         stocks = file.read()
@@ -109,7 +108,6 @@ def available_crypto_for_letter(letter):
     with open('list_of_cryptocurrencies.txt', 'r', encoding='utf-8') as file:
         crypto = file.read()
         if letter.isupper():
-            print('upper')
             for line in crypto.split('\n'):
                 if not line.startswith(letter):
                     continue
@@ -126,6 +124,66 @@ def available_crypto_for_letter(letter):
                     continue
                 param['crypto'].append({'symbol': symbol, 'name': name, 'price': price})
     return render_template('available_crypto_for_letter.html', **param)
+
+
+@app.route('/fiat', methods=['GET', 'POST'])
+def fiat():
+    form = SearchTickerForm()
+    form2 = ReloadDataForm()
+    param = {}
+    param['form'] = form
+    param['form2'] = form2
+
+    if form.submit1.data:
+        if 'all' not in form.ticker.data and 'main' not in form.ticker.data:
+            return redirect(f'fiat/{form.ticker.data}')
+    if form2.submit2.data:
+        if data_api_functions.update_currencies_file():
+            param['reload'] = 1
+        else:
+            param['reload'] = 2
+
+    return render_template('available_fiat.html', **param)
+
+
+@app.route('/fiat/<string:letter>', methods=['GET', 'POST'])
+def available_fiat_for_letter(letter):
+    param = {}
+    param['letter'] = letter.upper()
+    param['fiats'] = []
+    with open('list_of_fiat.txt', 'r', encoding='utf-8') as file:
+        fiats = file.read()
+        if letter.isupper():
+            for line in fiats.split('\n'):
+                if not line.startswith(letter):
+                    continue
+                if line.startswith('BTC'):
+                    continue
+                if not line:
+                    continue
+                symbol, name, price = line.split(',')
+                param['fiats'].append({'symbol': symbol, 'name': name, 'price': price})
+        elif letter == 'main':
+            for line in fiats.split('\n'):
+                if not line:
+                    continue
+                if line.startswith('BTC'):
+                    continue
+                symbol, name, price = line.split(',')
+                if symbol not in MAIN_SYMBOLS.keys():
+                    continue
+                param['fiats'].append({'symbol': symbol, 'name': name, 'price': price})
+        else:
+            for line in fiats.split('\n'):
+                if not line:
+                    continue
+                if line.startswith('BTC'):
+                    continue
+                symbol, name, price = line.split(',')
+                if not name.startswith(letter) and letter != 'all':
+                    continue
+                param['fiats'].append({'symbol': symbol, 'name': name, 'price': price})
+    return render_template('available_fiat_for_letter.html', **param)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -184,10 +242,6 @@ def register():
 def user():
     return "user's account will be here"
 
-
-@app.route('/fiat')
-def fiat():
-    return "fiat currencies will be here"
 
 
 if __name__ == '__main__':
