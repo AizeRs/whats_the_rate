@@ -3,7 +3,7 @@ import requests
 import csv
 from alpha_vantage.timeseries import TimeSeries
 from alpha_vantage.foreignexchange import ForeignExchange
-
+from main import MAIN_SYMBOLS
 
 # GET TICKER PRICE
 def ticker_price(ticker):
@@ -47,7 +47,9 @@ def update_currencies_file():
         with open('list_of_fiat.txt', 'w', encoding='utf-8') as file:
             for currency in names.keys():
                 if currency in prices.keys():
-                    file.write(f'{currency},{names[currency]},{prices[currency]}\n')
+                    file.write(f'{currency},{names[currency]},{1 / float(prices[currency])}\n')
+                    if currency in MAIN_SYMBOLS.keys():
+                        MAIN_SYMBOLS[currency] = (MAIN_SYMBOLS[currency][0], 1 / float(prices[currency]))
         return True
     except Exception as e:
         print(e)

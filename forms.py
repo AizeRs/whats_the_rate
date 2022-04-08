@@ -24,3 +24,11 @@ class SearchTickerForm(FlaskForm):
 
 class ReloadDataForm(FlaskForm):
     submit2 = SubmitField('Обновить')
+
+
+class ChangePassForm(FlaskForm):
+    old_password = PasswordField('Старый пароль', validators=[DataRequired()])
+    new_password = PasswordField('Новый пароль', validators=[DataRequired()])
+    new_password_submit = PasswordField('Повтор нового пароля', validators=[DataRequired()])
+    submit_pass = SubmitField('Сменить пароль')
+

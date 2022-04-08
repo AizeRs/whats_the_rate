@@ -10,6 +10,7 @@ class User(SqlAlchemyBase, UserMixin):
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
     username = sqlalchemy.Column(sqlalchemy.String, unique=True, nullable=True)
     email = sqlalchemy.Column(sqlalchemy.String, index=True, unique=True, nullable=True)
+    main_currency = sqlalchemy.Column(sqlalchemy.String, nullable=True, default='USD')
     hashed_password = sqlalchemy.Column(sqlalchemy.String, nullable=True)
 
     def set_password(self, password):

@@ -1092,8 +1092,8 @@ AZZ,AZZ Inc,No price data
 B,Barnes Group Inc,40.1600
 BA,Boeing Company,191.1800
 BAB,Invesco Taxable Municipal Bond ETF,No price data
-BABA,Alibaba Group Holding Ltd,117.5400
-BAC,Bank Of America Corp,40.7900
+BABA,Alibaba Group Holding Ltd,104.8000
+BAC,Bank Of America Corp,39.4200
 BAC-P-B,Bank Of America Corp,No price data
 BAC-P-E,Bank Of America Corp,No price data
 BAC-P-K,Bank Of America Corp,No price data
@@ -12522,5 +12522,13 @@ ZYNE,Zynerba Pharmaceuticals Inc,No price data
 ZYXI,Zynex Inc,No price data
 ZZK,,No price data
 ZZZ,TEST TICKER FOR UTP,No price data
+
+
+
+
+
+
+
+
 
 

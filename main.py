@@ -1,8 +1,10 @@
+from sqlalchemy import text
+
 from constants import *
 import data_api_functions
 import flask_login
 from flask import Flask, render_template, redirect, session, url_for, request
-from forms import LoginForm, RegisterForm, SearchTickerForm, ReloadDataForm
+from forms import LoginForm, RegisterForm, SearchTickerForm, ReloadDataForm, ChangePassForm
 from flask_login import LoginManager, login_user
 from data import db_session
 from data.users import User
@@ -14,6 +16,19 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 
 db_session.global_init('db/users.db')
+
+MAIN_SYMBOLS = {'USD': ('$', 0), 'EUR': ('€', 0), 'RUB': ('₽', 0), 'GBP': ('£', 0), 'JPY': ('¥', 0), 'CHF': ('₣', 0),
+                'BTC': ('₿', 0)}
+
+with open('list_of_fiat.txt', 'r', encoding='utf-8') as file:
+    fiats = file.read()
+    for line in fiats.split('\n'):
+        if not line:
+            continue
+        symbol, name, cur_price = line.split(',')
+        if symbol in MAIN_SYMBOLS.keys():
+            MAIN_SYMBOLS[symbol] = (MAIN_SYMBOLS[symbol][0], float(cur_price))
+
 
 
 @login_manager.user_loader
@@ -54,14 +69,19 @@ def available_stocks_for_letter(letter):
     param = {}
     param['letter'] = letter.upper()
     param['stocks'] = []
-
+    if flask_login.current_user.is_authenticated:
+        main_symbol = flask_login.current_user.main_currency
+        main_rate = MAIN_SYMBOLS[main_symbol][1]
+    else:
+        main_symbol = 'USD'
+        main_rate = 1
     if request.method == 'POST':
         if request.form.get('reload_rate'):
             ticker = request.form.get('reload_rate').split()[-1]
-            price = data_api_functions.ticker_price(ticker)
+            price = data_api_functions.ticker_price(ticker)[0]
             if price:
                 param['success'] = f'{ticker}_r'
-                data_api_functions.save_ticker_price(ticker, price[0])
+                data_api_functions.save_ticker_price(ticker, price)
             else:
                 param['danger'] = f'{ticker}_r'
         if request.form.get('add_stock'):
@@ -76,7 +96,9 @@ def available_stocks_for_letter(letter):
             if not line:
                 continue
             ticker, stock, price = line.split(',')
-            param['stocks'].append({'ticker': ticker, 'stock': stock, 'price': price})
+            param['stocks'].append({'ticker': ticker, 'stock': stock,
+                                    'price': str(float(price) / main_rate) + MAIN_SYMBOLS[main_symbol][0]
+                                    if price != 'No price data' else price})
     return render_template('available_stocks_for_letter.html', **param)
 
 
@@ -105,6 +127,12 @@ def available_crypto_for_letter(letter):
     param = {}
     param['letter'] = letter.upper()
     param['crypto'] = []
+    if flask_login.current_user.is_authenticated:
+        main_symbol = flask_login.current_user.main_currency
+        main_rate = MAIN_SYMBOLS[main_symbol][1]
+    else:
+        main_symbol = 'USD'
+        main_rate = 1
     with open('list_of_cryptocurrencies.txt', 'r', encoding='utf-8') as file:
         crypto = file.read()
         if letter.isupper():
@@ -114,7 +142,8 @@ def available_crypto_for_letter(letter):
                 if not line:
                     continue
                 symbol, name, price = line.split(',')
-                param['crypto'].append({'symbol': symbol, 'name': name, 'price': price})
+                param['crypto'].append({'symbol': symbol, 'name': name,
+                                        'price': str(float(price) / main_rate) + MAIN_SYMBOLS[main_symbol][0]})
         else:
             for line in crypto.split('\n'):
                 if not line:
@@ -122,7 +151,8 @@ def available_crypto_for_letter(letter):
                 symbol, name, price = line.split(',')
                 if not name.startswith(letter):
                     continue
-                param['crypto'].append({'symbol': symbol, 'name': name, 'price': price})
+                param['crypto'].append({'symbol': symbol, 'name': name,
+                                        'price': str(float(price) / main_rate) + MAIN_SYMBOLS[main_symbol][0]})
     return render_template('available_crypto_for_letter.html', **param)
 
 
@@ -151,6 +181,12 @@ def available_fiat_for_letter(letter):
     param = {}
     param['letter'] = letter.upper()
     param['fiats'] = []
+    if flask_login.current_user.is_authenticated:
+        main_symbol = flask_login.current_user.main_currency
+        main_rate = MAIN_SYMBOLS[main_symbol][1]
+    else:
+        main_symbol = 'USD'
+        main_rate = 1
     with open('list_of_fiat.txt', 'r', encoding='utf-8') as file:
         fiats = file.read()
         if letter.isupper():
@@ -162,7 +198,8 @@ def available_fiat_for_letter(letter):
                 if not line:
                     continue
                 symbol, name, price = line.split(',')
-                param['fiats'].append({'symbol': symbol, 'name': name, 'price': price})
+                param['fiats'].append({'symbol': symbol, 'name': name,
+                                       'price': str(float(price) / main_rate) + MAIN_SYMBOLS[main_symbol][0]})
         elif letter == 'main':
             for line in fiats.split('\n'):
                 if not line:
@@ -172,7 +209,8 @@ def available_fiat_for_letter(letter):
                 symbol, name, price = line.split(',')
                 if symbol not in MAIN_SYMBOLS.keys():
                     continue
-                param['fiats'].append({'symbol': symbol, 'name': name, 'price': price})
+                param['fiats'].append({'symbol': symbol, 'name': name,
+                                       'price': str(float(price) / main_rate) + MAIN_SYMBOLS[main_symbol][0]})
         else:
             for line in fiats.split('\n'):
                 if not line:
@@ -182,7 +220,8 @@ def available_fiat_for_letter(letter):
                 symbol, name, price = line.split(',')
                 if not name.startswith(letter) and letter != 'all':
                     continue
-                param['fiats'].append({'symbol': symbol, 'name': name, 'price': price})
+                param['fiats'].append({'symbol': symbol, 'name': name,
+                                       'price': str(float(price) / main_rate) + MAIN_SYMBOLS[main_symbol][0]})
     return render_template('available_fiat_for_letter.html', **param)
 
 
@@ -238,10 +277,47 @@ def register():
     return render_template('register.html', title='Авторизация', form=form)
 
 
-@app.route('/user')
+@app.route('/user', methods=['GET', 'POST'])
 def user():
-    return "user's account will be here"
+    if not flask_login.current_user.is_authenticated:
+        return redirect(url_for('login'))
+    pass_form = ChangePassForm()
+    param = {}
+    param['pass_form'] = pass_form
+    param['main_currencies'] = [(i, MAIN_SYMBOLS[i][0]) for i in MAIN_SYMBOLS.keys()]
+    if pass_form.submit_pass.data:
+        if not flask_login.current_user.check_password(pass_form.old_password.data):
+            pass_form.old_password.errors = ['Неверный пароль']
+            param['pass_submit'] = 1
+        elif len(pass_form.new_password.data) < 5:
+            pass_form.new_password.errors = ['Минимальная длина пароля - 5 символов']
+            param['pass_submit'] = 1
+        elif pass_form.new_password.data != pass_form.new_password_submit.data:
+            pass_form.new_password_submit.errors = ['Пароли не совпадают']
+            param['pass_submit'] = 1
+        else:
+            flask_login.current_user.set_password(pass_form.new_password.data)
+            db_sess = db_session.create_session()
+            usr = db_sess.query(User).get(flask_login.current_user.id)
+            usr.hashed_password = flask_login.current_user.hashed_password
+            db_sess.commit()
+            param['pass_submit'] = 0
+    return render_template('user.html', **param)
 
+
+@app.route('/user/set_main_currency/<string:currency>')
+def user_set_main_currency(currency):
+    if currency not in MAIN_SYMBOLS.keys():
+        return redirect(url_for('user'))
+    if not flask_login.current_user.is_authenticated:
+        return redirect(url_for('login'))
+
+    db_sess = db_session.create_session()
+    usr = db_sess.query(User).get(flask_login.current_user.id)
+    usr.main_currency = currency
+    db_sess.commit()
+    flask_login.current_user.main_currency = currency
+    return redirect(url_for('user'))
 
 
 if __name__ == '__main__':
