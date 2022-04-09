@@ -1,9 +1,9 @@
 h1 {
-    font: italic 16px/2 cursive;
+    font-family: "Times New Roman", Times, serif;
     text-align: center;
 }
 h3 {
-    font: italic 16px/2 cursive;
+    font-family: "Times New Roman", Times, serif;
 }
 .btn-dark {
     position: fixed;
