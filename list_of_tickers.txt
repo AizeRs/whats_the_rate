@@ -1090,7 +1090,7 @@ AZUL,Azul S.A.,No price data
 AZYO,Aziyo Biologics Inc - Class A,No price data
 AZZ,AZZ Inc,No price data
 B,Barnes Group Inc,40.1600
-BA,Boeing Company,191.1800
+BA,Boeing Company,182.0000
 BAB,Invesco Taxable Municipal Bond ETF,No price data
 BABA,Alibaba Group Holding Ltd,104.8000
 BAC,Bank Of America Corp,39.4200
@@ -1864,7 +1864,7 @@ CAKE,Cheesecake Factory Inc,No price data
 CAL,Caleres Inc,No price data
 CALA,Calithera Biosciences Inc,No price data
 CALB,California Bancorp,No price data
-CALF,Pacer US Small Cap Cash Cows 100 ETF,No price data
+CALF,Pacer US Small Cap Cash Cows 100 ETF,39.1600
 CALM,Cal-Maine Foods Inc,No price data
 CALT,Calliditas Therapeutics AB,No price data
 CALX,Calix Inc,No price data
@@ -11990,7 +11990,7 @@ VYNT,Vyant Bio Inc,No price data
 VZ,Verizon Communications Inc,No price data
 VZIO,VIZIO Holding Corp - Class A,No price data
 VZLA,Vizsla Silver Corp,No price data
-W,Wayfair Inc - Class A,No price data
+W,Wayfair Inc - Class A,109.0000
 WAB,Westinghouse Air Brake Technologies Corp,No price data
 WABC,Westamerica Bancorporation,No price data
 WAFD,Washington Federal Inc,No price data
@@ -12522,6 +12522,15 @@ ZYNE,Zynerba Pharmaceuticals Inc,No price data
 ZYXI,Zynex Inc,No price data
 ZZK,,No price data
 ZZZ,TEST TICKER FOR UTP,No price data
+
+
+
+
+
+
+
+
+
 
 
 

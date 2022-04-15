@@ -50,7 +50,7 @@
                        name="reload_rate"/>
                 {% endif %}
             </li>
-            {% if current_user.is_authenticated == True %}
+            {% if current_user.is_authenticated == True and current_user.portfolio_id != None %}
             <li class="list-group-item">
                 {% if success == pair['ticker'] + "_a" %}
                 <input class="btn btn-success btn-sm" type="submit" value="Добавить {{ pair['ticker'] }} в портфель"

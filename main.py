@@ -4,10 +4,11 @@ from constants import *
 import data_api_functions
 import flask_login
 from flask import Flask, render_template, redirect, session, url_for, request
-from forms import LoginForm, RegisterForm, SearchTickerForm, ReloadDataForm, ChangePassForm
+from forms import *
 from flask_login import LoginManager, login_user
 from data import db_session
 from data.users import User
+from data.portfolios import Portfolio
 import requests
 
 app = Flask(__name__)
@@ -28,7 +29,7 @@ with open('list_of_fiat.txt', 'r', encoding='utf-8') as file:
         symbol, name, cur_price = line.split(',')
         if symbol in MAIN_SYMBOLS.keys():
             MAIN_SYMBOLS[symbol] = (MAIN_SYMBOLS[symbol][0], float(cur_price))
-
+    del (symbol, name, cur_price, line, fiats)
 
 
 @login_manager.user_loader
@@ -86,7 +87,17 @@ def available_stocks_for_letter(letter):
                 param['danger'] = f'{ticker}_r'
         if request.form.get('add_stock'):
             ticker = request.form.get('add_stock').split()[1]
-            param['success'] = f'{ticker}_a'
+            db_sess = db_session.create_session()
+            pf = db_sess.query(Portfolio).filter(Portfolio.id == flask_login.current_user.portfolio_id)
+            if not pf:
+                param['danger'] = f'{ticker}_a'
+            else:
+                pf = pf.one()
+                if pf.set_in_dict('stocks', ticker, 1) != 'Too Many Stocks Error':
+                    db_sess.commit()
+                    param['success'] = f'{ticker}_a'
+                else:
+                    param['danger'] = f'{ticker}_a'
 
     with open('list_of_tickers.txt', 'r', encoding='utf-8') as file:
         stocks = file.read()
@@ -153,6 +164,20 @@ def available_crypto_for_letter(letter):
                     continue
                 param['crypto'].append({'symbol': symbol, 'name': name,
                                         'price': str(float(price) / main_rate) + MAIN_SYMBOLS[main_symbol][0]})
+
+    if request.method == 'POST':
+        if request.form.get('add_crypto'):
+            ticker = request.form.get('add_crypto').split()[1]
+            db_sess = db_session.create_session()
+            pf = db_sess.query(Portfolio).filter(Portfolio.id == flask_login.current_user.portfolio_id)
+            if not pf:
+                param['danger'] = f'{ticker}_a'
+                return
+            pf = pf.one()
+            pf.set_in_dict('crypto', ticker, 1)
+            db_sess.commit()
+            param['success'] = f'{ticker}_a'
+
     return render_template('available_crypto_for_letter.html', **param)
 
 
@@ -222,6 +247,19 @@ def available_fiat_for_letter(letter):
                     continue
                 param['fiats'].append({'symbol': symbol, 'name': name,
                                        'price': str(float(price) / main_rate) + MAIN_SYMBOLS[main_symbol][0]})
+
+        if request.form.get('add_fiat'):
+            ticker = request.form.get('add_fiat').split()[1]
+            db_sess = db_session.create_session()
+            pf = db_sess.query(Portfolio).filter(Portfolio.id == flask_login.current_user.portfolio_id)
+            if not pf:
+                param['danger'] = f'{ticker}_a'
+                return
+            pf = pf.one()
+            pf.set_in_dict('fiat', ticker, 1)
+            db_sess.commit()
+            param['success'] = f'{ticker}_a'
+
     return render_template('available_fiat_for_letter.html', **param)
 
 
@@ -281,10 +319,20 @@ def register():
 def user():
     if not flask_login.current_user.is_authenticated:
         return redirect(url_for('login'))
+
     pass_form = ChangePassForm()
     param = {}
     param['pass_form'] = pass_form
     param['main_currencies'] = [(i, MAIN_SYMBOLS[i][0]) for i in MAIN_SYMBOLS.keys()]
+    if not flask_login.current_user.portfolio_id:
+        portfolio_form = CreatePortfolio()
+        param['portfolio_form_'] = portfolio_form
+        param['portfolio_form'] = portfolio_form
+        flag = True
+    else:
+        param['user_portfolio_link'] = url_for(f'portfolios_username', username=flask_login.current_user.username)
+        flag = False
+
     if pass_form.submit_pass.data:
         if not flask_login.current_user.check_password(pass_form.old_password.data):
             pass_form.old_password.errors = ['Неверный пароль']
@@ -302,6 +350,19 @@ def user():
             usr.hashed_password = flask_login.current_user.hashed_password
             db_sess.commit()
             param['pass_submit'] = 0
+    if not flask_login.current_user.portfolio_id:
+        if flag and portfolio_form.submit_private.data:
+            pf = Portfolio(isprivate=True)
+        if flag and portfolio_form.submit_public.data:
+            pf = Portfolio(isprivate=False)
+
+        if flag and (portfolio_form.submit_private.data or portfolio_form.submit_public.data):
+            db_sess = db_session.create_session()
+            user = db_sess.query(User).get(flask_login.current_user.id)
+            db_sess.add(pf)
+            ids = [i[0] for i in db_sess.query(Portfolio.id).all()]
+            user.portfolio_id = max(ids) if ids else 1
+            db_sess.commit()
     return render_template('user.html', **param)
 
 
@@ -320,5 +381,180 @@ def user_set_main_currency(currency):
     return redirect(url_for('user'))
 
 
+@app.route('/portfolios/<username>', methods=['GET', 'POST'])
+def portfolios_username(username):
+    param = {}
+    db_sess = db_session.create_session()
+
+    user = db_sess.query(User).filter(User.username == username).all()
+    if not user:
+        return render_template('portfolios.html')
+    user = user[0]
+
+    pf = db_sess.query(Portfolio).filter(Portfolio.id == user.portfolio_id)
+    if not pf:
+        param['not_found'] = True
+        return render_template('portfolios.html')
+    pf = pf.one()
+
+    if pf.isprivate and (not flask_login.current_user.is_authenticated or flask_login.current_user.id != user.id):
+        param['no_access'] = True
+    param['username'] = username
+
+    if flask_login.current_user.is_authenticated:
+        pref_symbol = MAIN_SYMBOLS[flask_login.current_user.main_currency]
+        if flask_login.current_user.id == user.id:
+            param['is_owner'] = True
+    else:
+        pref_symbol = MAIN_SYMBOLS['USD']
+    data = pf.get_dict()
+
+    if request.method == 'POST':
+        if request.form.get('reload'):
+            for ticker in data['stocks'].keys():
+                price = data_api_functions.ticker_price(ticker)[0]
+                if price:
+                    param['success_btn'] = 'reload'
+                    data_api_functions.save_ticker_price(ticker, price)
+                else:
+                    param['danger_btn'] = 'reload'
+            if data['crypto']:
+                data_api_functions.update_crypto_file()
+            if data['fiat']:
+                data_api_functions.update_currencies_file()
+
+    param['stocks'] = []
+    param['cryptos'] = []
+    param['fiats'] = []
+    with open('list_of_tickers.txt', encoding='utf-8') as stocks_file, \
+            open('list_of_cryptocurrencies.txt', encoding='utf-8') as crypto_file, \
+            open('list_of_fiat.txt', encoding='utf-8') as fiat_file:
+
+        for line in stocks_file.read().split('\n'):
+            if not line:
+                continue
+            for current_stock in data['stocks'].keys():
+                tck, name, price = line.split(',')
+                if tck == current_stock:
+                    try:
+                        param['stocks'].append({'symbol': current_stock,
+                                                'name': name,
+                                                'number': 'x' + str(data['stocks'][current_stock]),
+                                                'price': str(float(price) * data['stocks'][current_stock]
+                                                             / pref_symbol[1]) + pref_symbol[0]
+                                                })
+                    except ValueError:
+                        continue
+
+        for line in crypto_file.read().split('\n'):
+            if not line:
+                continue
+            for current_crypto in data['crypto'].keys():
+                tck, name, price = line.split(',')
+                if tck == current_crypto:
+                    try:
+                        param['cryptos'].append({'symbol': current_crypto,
+                                                 'name': name,
+                                                 'number': 'x' + str(data['crypto'][current_crypto]),
+                                                 'price': str(float(price) * data['crypto'][current_crypto]
+                                                              / pref_symbol[1]) + pref_symbol[0]
+                                                 })
+                    except ValueError:
+                        continue
+
+        for line in fiat_file.read().split('\n'):
+            if not line:
+                continue
+            for current_fiat in data['fiat'].keys():
+                tck, name, price = line.split(',')
+                if tck == current_fiat:
+                    try:
+                        param['fiats'].append({'symbol': current_fiat,
+                                               'name': name,
+                                               'number': 'x' + str(data['fiat'][current_fiat]),
+                                               'price': str(float(price) * data['fiat'][current_fiat]
+                                                            / pref_symbol[1]) + pref_symbol[0]
+                                               })
+                    except ValueError:
+                        continue
+
+    if request.method == 'POST':
+        for stock in param['stocks']:
+            if request.form.get(f"stocks_{stock['symbol']}_btn"):
+                new_number = request.form.get(f"stocks_{stock['symbol']}")
+                try:
+                    new_number = int(new_number[1:]) if new_number.startswith('x') else int(new_number)
+                except (ValueError, TypeError):
+                    param['alert_btn'] = stock['name']
+                    break
+
+                pf.set_in_dict('stocks', stock['symbol'], new_number)
+                param['stocks'][param['stocks'].index(stock)]['price'] = str(
+                    float(stock['price'][:-1]) / float(stock['number'][1:]) * new_number) + pref_symbol[0]
+                param['stocks'][param['stocks'].index(stock)]['number'] = 'x' + str(new_number)
+                param['success_btn'] = stock['name']
+                db_sess.commit()
+
+        for crypto in param['cryptos']:
+            if request.form.get(f"crypto_{crypto['symbol']}_btn"):
+                new_number = request.form.get(f"crypto_{crypto['symbol']}")
+                try:
+                    new_number = int(new_number[1:]) if new_number.startswith('x') else int(new_number)
+                except (ValueError, TypeError):
+                    param['alert_btn'] = crypto['name']
+                    break
+
+                pf.set_in_dict('crypto', crypto['symbol'], new_number)
+                param['cryptos'][param['cryptos'].index(crypto)]['price'] = str(
+                    float(crypto['price'][:-1]) / float(crypto['number'][1:]) * new_number) + pref_symbol[0]
+                param['cryptos'][param['cryptos'].index(crypto)]['number'] = 'x' + str(new_number)
+                param['success_btn'] = crypto['name']
+                db_sess.commit()
+
+        for fiat in param['fiats']:
+            if request.form.get(f"fiat_{fiat['symbol']}_btn"):
+                new_number = request.form.get(f"fiat_{fiat['symbol']}")
+                try:
+                    new_number = int(new_number[1:]) if new_number.startswith('x') else int(new_number)
+                except (ValueError, TypeError):
+                    param['alert_btn'] = fiat['name']
+                    break
+
+                pf.set_in_dict('fiat', fiat['symbol'], new_number)
+                param['fiats'][param['fiats'].index(fiat)]['price'] = str(
+                    float(fiat['price'][:-1]) / float(fiat['number'][1:]) * new_number) + pref_symbol[0]
+                param['fiats'][param['fiats'].index(fiat)]['number'] = 'x' + str(new_number)
+                param['success_btn'] = fiat['name']
+                db_sess.commit()
+
+    param['portfolio_sum'] = 0
+    param['stocks_sum'] = '0'
+    param['fiats_sum'] = '0'
+    param['cryptos_sum'] = '0'
+
+    if param['stocks']:
+        param['portfolio_sum'] += sum([float(i['price'][:-1]) for i in param['stocks']])
+        param['stocks_sum'] = str(sum([float(i['price'][:-1]) for i in param['stocks']]))
+    param['stocks_sum'] = param['stocks_sum'] + pref_symbol[0]
+
+    if param['cryptos']:
+        param['portfolio_sum'] += sum([float(i['price'][:-1]) for i in param['cryptos']])
+        param['cryptos_sum'] = str(sum([float(i['price'][:-1]) for i in param['cryptos']]))
+    param['cryptos_sum'] = param['cryptos_sum'] + pref_symbol[0]
+
+    if param['fiats']:
+        param['portfolio_sum'] += sum([float(i['price'][:-1]) for i in param['fiats']])
+        param['fiats_sum'] = str(sum([float(i['price'][:-1]) for i in param['fiats']]))
+    param['fiats_sum'] = param['fiats_sum'] + pref_symbol[0]
+    param['portfolio_sum'] = str(param['portfolio_sum']) + pref_symbol[0]
+
+    return render_template('portfolios.html', **param)
+
+
 if __name__ == '__main__':
+    # db_sess = db_session.create_session()
+    # pf = db_sess.query(Portfolio).filter(Portfolio.id == 1).one()
+    # pf.set_in_dict('stocks', 'BA', 0)
+    # db_sess.commit()
+    # print(pf.get_dict())
     app.run(port=8080, host='127.0.0.1')

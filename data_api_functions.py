@@ -5,6 +5,7 @@ from alpha_vantage.timeseries import TimeSeries
 from alpha_vantage.foreignexchange import ForeignExchange
 from main import MAIN_SYMBOLS
 
+
 # GET TICKER PRICE
 def ticker_price(ticker):
     try:

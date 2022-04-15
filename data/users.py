@@ -12,6 +12,7 @@ class User(SqlAlchemyBase, UserMixin):
     email = sqlalchemy.Column(sqlalchemy.String, index=True, unique=True, nullable=True)
     main_currency = sqlalchemy.Column(sqlalchemy.String, nullable=True, default='USD')
     hashed_password = sqlalchemy.Column(sqlalchemy.String, nullable=True)
+    portfolio_id = sqlalchemy.Column(sqlalchemy.Integer)
 
     def set_password(self, password):
         self.hashed_password = sha256(str(password).encode('utf-8')).hexdigest()

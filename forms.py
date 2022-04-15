@@ -32,3 +32,7 @@ class ChangePassForm(FlaskForm):
     new_password_submit = PasswordField('Повтор нового пароля', validators=[DataRequired()])
     submit_pass = SubmitField('Сменить пароль')
 
+
+class CreatePortfolio(FlaskForm):
+    submit_private = SubmitField('Создать приватный портфель только для Вас')
+    submit_public = SubmitField('Создать публичный портфель с доступом по ссылке')

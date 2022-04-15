@@ -19,17 +19,17 @@
             <li class="list-group-item">{{ pair['symbol'] }}</li>
             <li class="list-group-item">{{ pair['name'] }}</li>
             <li class="list-group-item">{{ pair['price'] }}</li>
-            {% if current_user.is_authenticated == True %}
+            {% if current_user.is_authenticated == True and current_user.portfolio_id != None %}
             <li class="list-group-item">
                 {% if success == pair['symbol'] + "_a" %}
                 <input class="btn btn-success btn-sm" type="submit" value="Добавить {{ pair['symbol'] }} в портфель"
-                       name="add_stock"/>
+                       name="add_fiat"/>
                 {% elif danger == pair['symbol'] + "_a" %}
                 <input class="btn btn-danger btn-sm" type="submit" value="Добавить {{ pair['symbol'] }} в портфель"
-                       name="add_stock"/>
+                       name="add_fiat"/>
                 {% else %}
                 <input class="btn btn-secondary btn-sm" type="submit" value="Добавить {{ pair['symbol'] }} в портфель"
-                       name="add_stock"/>
+                       name="add_fiat"/>
                 {% endif %}
             </li>
             {% endif %}

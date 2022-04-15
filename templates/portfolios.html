@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+
+<html lang="en">
+{% extends "base.html" %}
+{% block content %}
+<head>
+    <meta charset="UTF-8">
+    <title>Просмотр портфеля · What's the rate</title>
+</head>
+
+{% if not_found %}
+<h1>Ошибка 404</h1>
+<h1>Данный портфель не найден</h1>
+
+{% elif no_access %}
+<h1>Ошибка 403</h1>
+<h1>У Вас нет доступа к данному портфелю</h1>
+
+{% else %}
+<h1>Портфель пользователя {{ username }}</h1>
+<br>
+<div class="d-grid mx-auto">
+    <form action="" method="post" class="mx-auto">
+        {% if success_btn == 'reload' %}
+        <input class="btn btn-success mx-auto" type="submit" value="Обновить цену портфеля"
+               name="reload"/>
+        {% elif danger_btn == 'reload' %}
+        <input class="btn btn-danger mx-auto" type="submit" value="Обновить цену портфеля"
+               name="reload"/>
+        {% else %}
+        <input class="btn btn-primary mx-auto" type="submit" value="Обновить цену портфеля"
+               name="reload"/>
+        {% endif %}
+    </form>
+</div>
+<br>
+<h3>Общая цена портфеля: {{ portfolio_sum }}</h3>
+<h3>Акции: {{ stocks_sum }}</h3>
+<ul class="list-group gap-3">
+    {% for stock in stocks %}
+    <ul class="list-group list-group-horizontal">
+        <li class="list-group-item">{{ stock['symbol'] }}</li>
+        <li class="list-group-item">{{ stock['name'] }}</li>
+        <li class="list-group-item">
+            <form action="" method="post">
+                <div class="input-group mb-3">
+                    <label>
+                        <input name="stocks_{{ stock['symbol'] }}" class="form-control mx-auto"
+                               placeholder="{{ stock['number'] }}"/>
+                    </label>
+                    {% if success_btn == stock['name'] %}
+                    <input class="btn btn-success btn-sm" type="submit" value="Изменить"
+                           name="stocks_{{ stock['symbol'] }}_btn"/>
+                    {% elif danger_btn == stock['name'] %}
+                    <input class="btn btn-danger btn-sm" type="submit" value="Изменить"
+                           name="stocks_{{ stock['symbol'] }}_btn"/>
+                    {% else %}
+                    <input class="btn btn-secondary btn-sm" type="submit" value="Изменить"
+                           name="stocks_{{ stock['symbol'] }}_btn"/>
+                    {% endif %}
+                </div>
+            </form>
+        </li>
+        <li class="list-group-item">{{ stock['price'] }}</li>
+    </ul>
+    {% endfor %}
+</ul>
+<h3>Криптовалюты: {{ cryptos_sum }}</h3>
+<ul class="list-group gap-3">
+    {% for crypto in cryptos %}
+    <ul class="list-group list-group-horizontal">
+        <li class="list-group-item">{{ crypto['symbol'] }}</li>
+        <li class="list-group-item">{{ crypto['name'] }}</li>
+        <li class="list-group-item">
+            <form action="" method="post">
+                <div class="input-group mb-3">
+                    <label>
+                        <input name="crypto_{{ crypto['symbol'] }}" class="form-control mx-auto"
+                               placeholder="{{ crypto['number'] }}"/>
+                    </label>
+                    {% if success_btn == crypto['name'] %}
+                    <input class="btn btn-success btn-sm" type="submit" value="Изменить"
+                           name="crypto_{{ crypto['symbol'] }}_btn"/>
+                    {% elif danger_btn == crypto['name'] %}
+                    <input class="btn btn-danger btn-sm" type="submit" value="Изменить"
+                           name="crypto_{{ crypto['symbol'] }}_btn"/>
+                    {% else %}
+                    <input class="btn btn-secondary btn-sm" type="submit" value="Изменить"
+                           name="crypto_{{ crypto['symbol'] }}_btn"/>
+                    {% endif %}
+                </div>
+            </form>
+        </li>
+        <li class="list-group-item">{{ crypto['price'] }}</li>
+    </ul>
+    {% endfor %}
+</ul>
+<h3>Фиатные валюты: {{ fiats_sum }}</h3>
+<ul class="list-group gap-3">
+    {% for fiat in fiats %}
+    <ul class="list-group list-group-horizontal">
+        <li class="list-group-item">{{ fiat['symbol'] }}</li>
+        <li class="list-group-item">{{ fiat['name'] }}</li>
+        <li class="list-group-item">
+            <form action="" method="post">
+                <div class="input-group mb-3">
+                    <label>
+                        <input name="fiat_{{ fiat['symbol'] }}" class="form-control mx-auto"
+                               placeholder="{{ fiat['number'] }}"/>
+                    </label>
+                    {% if success_btn == fiat['name'] %}
+                    <input class="btn btn-success btn-sm" type="submit" value="Изменить"
+                           name="fiat_{{ fiat['symbol'] }}_btn"/>
+                    {% elif danger_btn == fiat['name'] %}
+                    <input class="btn btn-danger btn-sm" type="submit" value="Изменить"
+                           name="fiat_{{ fiat['symbol'] }}_btn"/>
+                    {% else %}
+                    <input class="btn btn-secondary btn-sm" type="submit" value="Изменить"
+                           name="fiat_{{ fiat['symbol'] }}_btn"/>
+                    {% endif %}
+                </div>
+            </form>
+        </li>
+        <li class="list-group-item">{{ fiat['price'] }}</li>
+    </ul>
+    {% endfor %}
+</ul>
+{% endif %}
+{% endblock %}
+</html>

@@ -55,25 +55,35 @@
 </form>
 <br>
 
-<!--<div class="btn-group mx-auto" style="width: 450px;" role="group">-->
-<!--    <button id="btnGroupDrop1" type="button" class="btn btn-primary dropdown-toggle mx-auto" style="width: 200px;"-->
-<!--            data-bs-toggle="dropdown" aria-expanded="false">-->
-<!--        Создать портфель-->
-<!--    </button>-->
-<!--    <ul class="mx-auto dropdown-menu" style="width: 450px;" aria-labelledby="btnGroupDrop1">-->
-<!--        <li><a class="dropdown-item" href="#">Создать приватный портфель только для Вас</a></li>-->
-<!--        <li><a class="dropdown-item" href="#">Создать публичный портфель с доступом по ссылке</a></li>-->
-<!--    </ul>-->
-<!--</div>-->
+{% if not user_portfolio_link %}
+<div class="btn-group mx-auto" style="width: auto;" role="group">
+    <button id="btnGroupDrop1" type="button" class="btn btn-primary dropdown-toggle mx-auto" style="width: 200px;"
+            data-bs-toggle="dropdown" aria-expanded="false">
+        Создать портфель
+    </button>
+        <ul class="mx-auto dropdown-menu" style="width: auto;" aria-labelledby="btnGroupDrop1">
+            <form action="" method="post">
+                <li>{{ portfolio_form.submit_private(class="dropdown-item") }}</li>
+                <li>{{ portfolio_form.submit_public(class="dropdown-item") }}</li>
+            </form>
+        </ul>
 
-<div class="btn-group mx-auto" style="width: 450px;" role="group">
+</div>
+{% else %}
+<a class="btn btn-primary" role="button" href="{{ user_portfolio_link }}">
+    Ваш портфель
+</a>
+{% endif %}
+
+<div class="btn-group mx-auto" style="width: 300px; padding-left: 3%" role="group">
     <button id="btnGroupDrop2" type="button" class="btn btn-primary dropdown-toggle mx-auto" style="width: 200px;"
             data-bs-toggle="dropdown" aria-expanded="false">
         Изменить основную валюту
     </button>
-    <ul class="mx-auto dropdown-menu" style="width: 450px;" aria-labelledby="btnGroupDrop1">
+    <ul class="mx-auto dropdown-menu" style="width: auto;" aria-labelledby="btnGroupDrop1">
         {% for currency, symbol in main_currencies %}
-        <li><a class="dropdown-item" href="/user/set_main_currency/{{ currency }}">{{ currency }} : {{ symbol }}</a></li>
+        <li><a class="dropdown-item" style="width: auto" href="/user/set_main_currency/{{ currency }}">{{ currency }} : {{ symbol }}</a>
+        </li>
         {% endfor %}
     </ul>
 </div>
