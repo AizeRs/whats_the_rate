@@ -483,9 +483,9 @@ def portfolios_username(username):
             if request.form.get(f"stocks_{stock['symbol']}_btn"):
                 new_number = request.form.get(f"stocks_{stock['symbol']}")
                 try:
-                    new_number = int(new_number[1:]) if new_number.startswith('x') else int(new_number)
+                    new_number = float(new_number[1:]) if new_number.startswith('x') else float(new_number)
                 except (ValueError, TypeError):
-                    param['alert_btn'] = stock['name']
+                    param['danger_btn'] = stock['name']
                     break
 
                 pf.set_in_dict('stocks', stock['symbol'], new_number)
@@ -499,9 +499,9 @@ def portfolios_username(username):
             if request.form.get(f"crypto_{crypto['symbol']}_btn"):
                 new_number = request.form.get(f"crypto_{crypto['symbol']}")
                 try:
-                    new_number = int(new_number[1:]) if new_number.startswith('x') else int(new_number)
+                    new_number = float(new_number[1:]) if new_number.startswith('x') else float(new_number)
                 except (ValueError, TypeError):
-                    param['alert_btn'] = crypto['name']
+                    param['danger_btn'] = crypto['name']
                     break
 
                 pf.set_in_dict('crypto', crypto['symbol'], new_number)
@@ -515,9 +515,9 @@ def portfolios_username(username):
             if request.form.get(f"fiat_{fiat['symbol']}_btn"):
                 new_number = request.form.get(f"fiat_{fiat['symbol']}")
                 try:
-                    new_number = int(new_number[1:]) if new_number.startswith('x') else int(new_number)
+                    new_number = float(new_number[1:]) if new_number.startswith('x') else float(new_number)
                 except (ValueError, TypeError):
-                    param['alert_btn'] = fiat['name']
+                    param['danger_btn'] = fiat['name']
                     break
 
                 pf.set_in_dict('fiat', fiat['symbol'], new_number)
@@ -552,9 +552,7 @@ def portfolios_username(username):
 
 
 if __name__ == '__main__':
-    # db_sess = db_session.create_session()
-    # pf = db_sess.query(Portfolio).filter(Portfolio.id == 1).one()
-    # pf.set_in_dict('stocks', 'BA', 0)
-    # db_sess.commit()
-    # print(pf.get_dict())
-    app.run(port=8080, host='127.0.0.1')
+    try:
+        app.run(port=PORT, host=HOST)
+    except OSError:
+        app.run(port=8080, host='localhost')
