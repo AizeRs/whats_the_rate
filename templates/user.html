@@ -70,23 +70,34 @@
 
 </div>
 {% else %}
-<a class="btn btn-primary" role="button" href="{{ user_portfolio_link }}">
+<a class="btn btn-primary" style="width: 200px;" role="button" href="{{ user_portfolio_link }}">
     Ваш портфель
 </a>
 {% endif %}
 
-<div class="btn-group mx-auto" style="width: 300px; padding-left: 3%" role="group">
+<div class="btn-group mx-auto" style="width: 300px; padding-left: 3%;" role="group">
     <button id="btnGroupDrop2" type="button" class="btn btn-primary dropdown-toggle mx-auto" style="width: 200px;"
             data-bs-toggle="dropdown" aria-expanded="false">
         Изменить основную валюту
     </button>
     <ul class="mx-auto dropdown-menu" style="width: auto;" aria-labelledby="btnGroupDrop1">
         {% for currency, symbol in main_currencies %}
-        <li><a class="dropdown-item" style="width: auto" href="/user/set_main_currency/{{ currency }}">{{ currency }} : {{ symbol }}</a>
+        <li><a class="dropdown-item" style="width: auto;" href="/user/set_main_currency/{{ currency }}">{{ currency }} : {{ symbol }}</a>
         </li>
         {% endfor %}
     </ul>
 </div>
+<br>
+<br>
+{% if not current_user.apikey %}
+<form action="" method="post">
+    <button class="btn btn-primary" style="width: 200px; padding-left: 3%;" name="create_apikey" type="submit" value="1">
+        Создать апи-ключ
+    </button>
+</form>
+{% else %}
+<h2>Ваш апи-ключ: {{ current_user.apikey }}</h2>
+{% endif %}
 
 </body>
 {% endblock %}

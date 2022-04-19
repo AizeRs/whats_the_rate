@@ -10,7 +10,6 @@ class Portfolio(SqlAlchemyBase):
                                  default=dumps({'stocks': {}, 'crypto': {}, 'fiat': {}})
                                  )
     isprivate = sqlalchemy.Column(sqlalchemy.Boolean)
-    last_price = sqlalchemy.Column(sqlalchemy.Integer, default=1)
 
     def get_dict(self):
         return loads(self.contains)

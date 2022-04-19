@@ -19,6 +19,7 @@
 {% else %}
 <h1>Портфель пользователя {{ username }}</h1>
 <br>
+{% if is_owner %}
 <div class="d-grid mx-auto">
     <form action="" method="post" class="mx-auto">
         {% if success_btn == 'reload' %}
@@ -33,6 +34,7 @@
         {% endif %}
     </form>
 </div>
+{% endif %}
 <br>
 <h3>Общая цена портфеля: {{ portfolio_sum }}</h3>
 <h3>Акции: {{ stocks_sum }}</h3>

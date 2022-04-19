@@ -1,5 +1,3 @@
-from sqlalchemy import text
-
 from constants import *
 import data_api_functions
 import flask_login
@@ -9,7 +7,7 @@ from flask_login import LoginManager, login_user
 from data import db_session
 from data.users import User
 from data.portfolios import Portfolio
-import requests
+from random import randint
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = SECRET_KEY
@@ -332,7 +330,15 @@ def user():
     else:
         param['user_portfolio_link'] = url_for(f'portfolios_username', username=flask_login.current_user.username)
         flag = False
+    db_sess = db_session.create_session()
 
+    if request.method == 'POST':
+        if request.form.get('create_apikey') and flask_login.current_user.apikey is None:
+            apikey = randint(1000000000000000, 9999999999999999)
+            usr = db_sess.query(User).filter(User.id == flask_login.current_user.id).one()
+            usr.apikey = apikey
+            flask_login.current_user.apikey = apikey
+            db_sess.commit()
     if pass_form.submit_pass.data:
         if not flask_login.current_user.check_password(pass_form.old_password.data):
             pass_form.old_password.errors = ['Неверный пароль']
@@ -345,7 +351,6 @@ def user():
             param['pass_submit'] = 1
         else:
             flask_login.current_user.set_password(pass_form.new_password.data)
-            db_sess = db_session.create_session()
             usr = db_sess.query(User).get(flask_login.current_user.id)
             usr.hashed_password = flask_login.current_user.hashed_password
             db_sess.commit()
@@ -552,6 +557,8 @@ def portfolios_username(username):
 
 
 if __name__ == '__main__':
+    import api
+    app.register_blueprint(api.blueprint)
     try:
         app.run(port=PORT, host=HOST)
     except OSError:
