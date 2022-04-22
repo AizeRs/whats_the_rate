@@ -12522,22 +12522,3 @@ ZYNE,Zynerba Pharmaceuticals Inc,No price data
 ZYXI,Zynex Inc,No price data
 ZZK,,No price data
 ZZZ,TEST TICKER FOR UTP,No price data
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
