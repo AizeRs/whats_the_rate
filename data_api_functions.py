@@ -2,7 +2,6 @@ from constants import *
 import requests
 import csv
 from alpha_vantage.timeseries import TimeSeries
-from alpha_vantage.foreignexchange import ForeignExchange
 from main import MAIN_SYMBOLS
 
 

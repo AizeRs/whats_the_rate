@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, session, url_for, request, Blueprint, jsonify
+from flask import request, Blueprint, jsonify
 
 from data import db_session
 from data.users import User

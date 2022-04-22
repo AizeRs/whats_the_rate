@@ -1,7 +1,7 @@
 from constants import *
 import data_api_functions
 import flask_login
-from flask import Flask, render_template, redirect, session, url_for, request
+from flask import Flask, render_template, redirect, url_for, request
 from forms import *
 from flask_login import LoginManager, login_user
 from data import db_session
@@ -144,24 +144,15 @@ def available_crypto_for_letter(letter):
         main_rate = 1
     with open('list_of_cryptocurrencies.txt', 'r', encoding='utf-8') as file:
         crypto = file.read()
-        if letter.isupper():
-            for line in crypto.split('\n'):
-                if not line.startswith(letter):
-                    continue
-                if not line:
-                    continue
-                symbol, name, price = line.split(',')
-                param['crypto'].append({'symbol': symbol, 'name': name,
-                                        'price': str(float(price) / main_rate) + MAIN_SYMBOLS[main_symbol][0]})
-        else:
-            for line in crypto.split('\n'):
-                if not line:
-                    continue
-                symbol, name, price = line.split(',')
-                if not name.startswith(letter):
-                    continue
-                param['crypto'].append({'symbol': symbol, 'name': name,
-                                        'price': str(float(price) / main_rate) + MAIN_SYMBOLS[main_symbol][0]})
+        flag = letter.isupper()
+        for line in crypto.split('\n'):
+            if not line:
+                continue
+            symbol, name, price = line.split(',')
+            if not ((line.startswith(letter) and flag) or (name.startswith(letter) and not flag)):
+                continue
+            param['crypto'].append({'symbol': symbol, 'name': name,
+                                    'price': str(float(price) / main_rate) + MAIN_SYMBOLS[main_symbol][0]})
 
     if request.method == 'POST':
         if request.form.get('add_crypto'):
