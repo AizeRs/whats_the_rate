@@ -1,9 +1,9 @@
 from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import current_user, login_required
-from forms import ChangePassForm, CreatePortfolio
-from data import db_session
-from data.users import User
-from data.portfolios import Portfolio
+from app.forms import ChangePassForm, CreatePortfolio
+from app.models import db_session
+from app.models.users import User
+from app.models.portfolios import Portfolio
 from app.services.symbols import MAIN_SYMBOLS
 from random import randint
 

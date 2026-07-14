@@ -3,7 +3,6 @@ import os
 MAIN_SYMBOLS = {
     'USD': ('$', 1.0), 
     'EUR': ('€', 0), 
-    'RUB': ('₽', 0), 
     'GBP': ('£', 0), 
     'JPY': ('¥', 0), 
     'CHF': ('₣', 0),
@@ -14,7 +13,7 @@ def load_main_symbols():
     """Loads fiat rates from list_of_fiat.txt into MAIN_SYMBOLS."""
     try:
         base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        fiat_path = os.path.join(base_dir, 'list_of_fiat.txt')
+        fiat_path = os.path.join(base_dir, 'data/list_of_fiat.txt')
         with open(fiat_path, 'r', encoding='utf-8') as file:
             fiats = file.read()
             for line in fiats.split('\n'):

@@ -6,7 +6,7 @@ def update_crypto_file():
     if not success:
         return False
     try:
-        with open('list_of_cryptocurrencies.txt', 'w', encoding='utf-8') as file_out:
+        with open('data/list_of_cryptocurrencies.txt', 'w', encoding='utf-8') as file_out:
             file_out.writelines(lines)
         return True
     except Exception as e:
@@ -18,7 +18,7 @@ def update_currencies_file(main_symbols_dict):
     if not success:
         return False
     try:
-        with open('list_of_fiat.txt', 'w', encoding='utf-8') as file:
+        with open('data/list_of_fiat.txt', 'w', encoding='utf-8') as file:
             for currency in names.keys():
                 if currency in prices.keys():
                     rate = 1 / float(prices[currency])
@@ -39,7 +39,7 @@ def update_tickers_file():
     lines = []
     old_data = {}
     try:
-        with open('list_of_tickers.txt', 'r', encoding='utf-8') as file_in:
+        with open('data/list_of_tickers.txt', 'r', encoding='utf-8') as file_in:
             for row in file_in.read().split('\n'):
                 if row:
                     parts = row.split(',')
@@ -56,7 +56,7 @@ def update_tickers_file():
         return False
     
     try:
-        with open('list_of_tickers.txt', 'w', encoding='utf-8') as file_out:
+        with open('data/list_of_tickers.txt', 'w', encoding='utf-8') as file_out:
             file_out.writelines(lines)
         return True
     except Exception as e:
@@ -66,7 +66,7 @@ def update_tickers_file():
 def save_ticker_price(ticker, price):
     try:
         lines = []
-        with open('list_of_tickers.txt', 'r', encoding='utf-8') as file_in:
+        with open('data/list_of_tickers.txt', 'r', encoding='utf-8') as file_in:
             for line in file_in.read().split('\n'):
                 if not line:
                     continue
@@ -74,7 +74,7 @@ def save_ticker_price(ticker, price):
                 if parts[0] == ticker:
                     line = f'{parts[0]},{parts[1]},{price}'
                 lines.append(f'{line}\n')
-        with open('list_of_tickers.txt', 'w', encoding='utf-8') as file_out:
+        with open('data/list_of_tickers.txt', 'w', encoding='utf-8') as file_out:
             file_out.writelines(lines)
         return True
     except Exception as e:
@@ -85,7 +85,7 @@ def get_stocks_by_letter(letter):
     """Returns a list of stocks starting with a given letter."""
     stocks = []
     try:
-        with open('list_of_tickers.txt', 'r', encoding='utf-8') as file:
+        with open('data/list_of_tickers.txt', 'r', encoding='utf-8') as file:
             content = file.read()
             for line in content.split('\n')[1:]:
                 if not line or not line.startswith(letter.upper()):
@@ -100,7 +100,7 @@ def get_crypto_by_letter(letter):
     """Returns a list of cryptos starting with a given letter."""
     cryptos = []
     try:
-        with open('list_of_cryptocurrencies.txt', 'r', encoding='utf-8') as file:
+        with open('data/list_of_cryptocurrencies.txt', 'r', encoding='utf-8') as file:
             content = file.read()
             flag = letter.isupper()
             for line in content.split('\n'):
@@ -118,7 +118,7 @@ def get_fiat_by_letter(letter, main_symbols_keys=None):
     """Returns a list of fiats matching a given filter."""
     fiats = []
     try:
-        with open('list_of_fiat.txt', 'r', encoding='utf-8') as file:
+        with open('data/list_of_fiat.txt', 'r', encoding='utf-8') as file:
             content = file.read()
             for line in content.split('\n'):
                 if not line or line.startswith('BTC'):
@@ -144,7 +144,7 @@ def get_all_assets_dict():
     assets = {'stocks': {}, 'crypto': {}, 'fiat': {}}
     
     try:
-        with open('list_of_tickers.txt', encoding='utf-8') as f:
+        with open('data/list_of_tickers.txt', encoding='utf-8') as f:
             for line in f.read().split('\n'):
                 if line:
                     parts = line.split(',')
@@ -153,7 +153,7 @@ def get_all_assets_dict():
         pass
 
     try:
-        with open('list_of_cryptocurrencies.txt', encoding='utf-8') as f:
+        with open('data/list_of_cryptocurrencies.txt', encoding='utf-8') as f:
             for line in f.read().split('\n'):
                 if line:
                     parts = line.split(',')
@@ -162,7 +162,7 @@ def get_all_assets_dict():
         pass
 
     try:
-        with open('list_of_fiat.txt', encoding='utf-8') as f:
+        with open('data/list_of_fiat.txt', encoding='utf-8') as f:
             for line in f.read().split('\n'):
                 if line:
                     parts = line.split(',')

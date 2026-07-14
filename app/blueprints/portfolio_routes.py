@@ -1,8 +1,8 @@
 from flask import Blueprint, render_template, request, url_for
 from flask_login import current_user
-from data import db_session
-from data.users import User
-from data.portfolios import Portfolio
+from app.models import db_session
+from app.models.users import User
+from app.models.portfolios import Portfolio
 from app.services.symbols import MAIN_SYMBOLS
 from app.services.file_parser import update_crypto_file, update_currencies_file, save_ticker_price
 from app.services.api_client import ticker_price
@@ -53,7 +53,7 @@ def portfolios_username(username):
 
         # Populate asset lists with current prices from local files.
         try:
-            with open('list_of_tickers.txt', encoding='utf-8') as stocks_file:
+            with open('data/list_of_tickers.txt', encoding='utf-8') as stocks_file:
                 stocks_content = stocks_file.read().split('\n')
                 for line in stocks_content:
                     if not line:
@@ -74,7 +74,7 @@ def portfolios_username(username):
             pass
 
         try:
-            with open('list_of_cryptocurrencies.txt', encoding='utf-8') as crypto_file:
+            with open('data/list_of_cryptocurrencies.txt', encoding='utf-8') as crypto_file:
                 crypto_content = crypto_file.read().split('\n')
                 for line in crypto_content:
                     if not line:
@@ -95,7 +95,7 @@ def portfolios_username(username):
             pass
 
         try:
-            with open('list_of_fiat.txt', encoding='utf-8') as fiat_file:
+            with open('data/list_of_fiat.txt', encoding='utf-8') as fiat_file:
                 fiat_content = fiat_file.read().split('\n')
                 for line in fiat_content:
                     if not line:

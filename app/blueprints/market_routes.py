@@ -1,8 +1,8 @@
 from flask import Blueprint, render_template, redirect, request
 from flask_login import current_user
-from forms import SearchTickerForm, ReloadDataForm
-from data import db_session
-from data.portfolios import Portfolio
+from app.forms import SearchTickerForm, ReloadDataForm
+from app.models import db_session
+from app.models.portfolios import Portfolio
 from app.services.symbols import MAIN_SYMBOLS
 from app.services.file_parser import (
     update_tickers_file, update_crypto_file, update_currencies_file,

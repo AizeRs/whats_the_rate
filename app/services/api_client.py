@@ -1,4 +1,4 @@
-from constants import FINNHUB_APIKEY
+from app.constants import FINNHUB_APIKEY
 import requests
 
 def ticker_price(ticker):

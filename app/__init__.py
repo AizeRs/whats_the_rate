@@ -1,8 +1,8 @@
 from flask import Flask
 from flask_login import LoginManager
-from constants import SECRET_KEY
-from data import db_session
-from data.users import User
+from app.constants import SECRET_KEY
+from app.models import db_session
+from app.models.users import User
 
 login_manager = LoginManager()
 
