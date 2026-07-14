@@ -13,7 +13,7 @@
 </head>
 <nav class="navbar sticky-top navbar-expand-lg navbar-dark bg-dark">
     <div class="container-fluid">
-        <a class="navbar-brand" href="{{ url_for('index') }}">
+        <a class="navbar-brand" href="{{ url_for('main.index') }}">
             <img src="/static/img/favicon.png" alt="" width="32" height="24" class="d-inline-block align-text-top">
             What's the rate
         </a>
@@ -23,13 +23,13 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
             <div class="navbar-nav">
-                <a class="nav-link" href="{{ url_for('stocks') }}">Список доступных акций</a>
-                <a class="nav-link" href="{{ url_for('crypto') }}">Список доступных криптовалют</a>
-                <a class="nav-link" href="{{ url_for('fiat') }}">Список доступных валют</a>
+                <a class="nav-link" href="{{ url_for('market.stocks') }}">Список доступных акций</a>
+                <a class="nav-link" href="{{ url_for('market.crypto') }}">Список доступных криптовалют</a>
+                <a class="nav-link" href="{{ url_for('market.fiat') }}">Список доступных валют</a>
                 {% if current_user.is_authenticated == True %}
-                <a class="nav-link position-absolute end-0 mx-3" href="{{ url_for('user') }}">{{ current_user.username }}</a>
+                <a class="nav-link position-absolute end-0 mx-3" href="{{ url_for('main.user') }}">{{ current_user.username }}</a>
                 {% else %}
-                <a class="nav-link position-absolute end-0 mx-3" href="{{ url_for('login') }}">Войти</a>
+                <a class="nav-link position-absolute end-0 mx-3" href="{{ url_for('auth.login') }}">Войти</a>
                 {% endif %}
             </div>
         </div>

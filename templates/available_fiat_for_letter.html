@@ -7,10 +7,10 @@
     <meta charset="UTF-8">
     <title>{{ letter }} · Доступные валюты · What's the rate </title>
 </head>
-<a class="btn btn-dark" href="{{ url_for('fiat') }}" role="button">Вернуться к поиску</a>
+<a class="btn btn-dark" href="{{ url_for('market.fiat') }}" role="button">Вернуться к поиску</a>
 
 <body>
-<h1>Список доступных криптовалют ({{ letter }})</h1>
+<h1>Список доступных валют ({{ letter }})</h1>
 <ul class="list-group list-group gap-3">
     {% if fiats %}
     {% for pair in fiats %}

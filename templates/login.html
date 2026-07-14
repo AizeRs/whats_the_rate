@@ -30,7 +30,7 @@
     <p>{{ form.remember_me() }} {{ form.remember_me.label }}</p>
     <p>
         {{ form.submit(type="submit", class="btn btn-primary") }}
-        <a href="{{ url_for('register') }}">
+        <a href="{{ url_for('auth.register') }}">
             <button type="button" class="btn btn-primary" style="margin-left: 3%">Регистрация</button>
         </a>
     </p>
