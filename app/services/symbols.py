@@ -1,4 +1,6 @@
 import os
+from app.models.db_session import create_session
+from app.models.rates import FiatRate
 
 MAIN_SYMBOLS = {
     'USD': ('$', 1.0), 
@@ -10,20 +12,12 @@ MAIN_SYMBOLS = {
 }
 
 def load_main_symbols():
-    """Loads fiat rates from list_of_fiat.txt into MAIN_SYMBOLS."""
+    """Loads fiat rates from the database into MAIN_SYMBOLS."""
     try:
-        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        fiat_path = os.path.join(base_dir, 'data/list_of_fiat.txt')
-        with open(fiat_path, 'r', encoding='utf-8') as file:
-            fiats = file.read()
-            for line in fiats.split('\n'):
-                if not line:
-                    continue
-                symbol, name, cur_price = line.split(',')
-                if symbol in MAIN_SYMBOLS:
-                    MAIN_SYMBOLS[symbol] = (MAIN_SYMBOLS[symbol][0], float(cur_price))
-    except FileNotFoundError:
-        pass
-
-# Load initial values on module import.
-load_main_symbols()
+        session = create_session()
+        for symbol in MAIN_SYMBOLS:
+            fiat = session.query(FiatRate).filter(FiatRate.symbol == symbol).first()
+            if fiat and fiat.price:
+                MAIN_SYMBOLS[symbol] = (MAIN_SYMBOLS[symbol][0], fiat.price)
+    except Exception as e:
+        print(f"Error loading main symbols: {e}")

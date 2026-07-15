@@ -4,8 +4,8 @@ from app.forms import SearchTickerForm, ReloadDataForm
 from app.models import db_session
 from app.models.portfolios import Portfolio
 from app.services.symbols import MAIN_SYMBOLS
-from app.services.file_parser import (
-    update_tickers_file, update_crypto_file, update_currencies_file,
+from app.services.data_service import (
+    update_tickers_db, update_crypto_db, update_currencies_db,
     get_stocks_by_letter, get_crypto_by_letter, get_fiat_by_letter,
     save_ticker_price
 )
@@ -27,7 +27,7 @@ def stocks():
     if form.submit1.data:
         return redirect(f'stocks/{form.ticker.data.upper()}')
     if form2.submit2.data:
-        if update_tickers_file():
+        if update_tickers_db():
             param['reload'] = 1
         else:
             param['reload'] = 2
@@ -92,7 +92,7 @@ def crypto():
     if form.submit1.data:
         return redirect(f'crypto/{form.ticker.data}')
     if form2.submit2.data:
-        if update_crypto_file():
+        if update_crypto_db():
             param['reload'] = 1
         else:
             param['reload'] = 2
@@ -144,7 +144,7 @@ def fiat():
         if 'all' not in form.ticker.data and 'main' not in form.ticker.data:
             return redirect(f'fiat/{form.ticker.data}')
     if form2.submit2.data:
-        if update_currencies_file(MAIN_SYMBOLS):
+        if update_currencies_db(MAIN_SYMBOLS):
             param['reload'] = 1
         else:
             param['reload'] = 2

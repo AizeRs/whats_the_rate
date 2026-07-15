@@ -3,7 +3,7 @@ from app.models import db_session
 from app.models.users import User
 from app.models.portfolios import Portfolio
 from app.services.symbols import MAIN_SYMBOLS
-from app.services.file_parser import update_crypto_file, update_currencies_file, save_ticker_price, get_all_assets_dict
+from app.services.data_service import update_crypto_db, update_currencies_db, save_ticker_price, get_all_assets_dict
 from app.services.api_client import ticker_price
 
 from app.utils import format_price
@@ -109,8 +109,8 @@ def reload_portfolio():
             return jsonify({'Error': 'Stocks API limit exceeded'})
             
     if data['crypto']:
-        update_crypto_file()
+        update_crypto_db()
     if data['fiat']:
-        update_currencies_file(MAIN_SYMBOLS)
+        update_currencies_db(MAIN_SYMBOLS)
         
     return 'Success'

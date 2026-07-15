@@ -1,1 +1,1 @@
-from . import users, portfolios
+from . import users, portfolios, rates
