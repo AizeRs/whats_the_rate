@@ -1,4 +1,8 @@
 def format_price(value):
+    """
+    Formats a numeric price value into a string with appropriate decimal places
+    based on its magnitude.
+    """
     try:
         val = float(value)
     except (ValueError, TypeError):
@@ -41,6 +45,7 @@ def get_portfolio_details(portfolio_data, all_assets_cache, pref_symbol_tuple):
     }
     
     def process_category(cat_name):
+        """Calculates total value for a specific asset category."""
         category_sum = 0.0
         for current_asset, amount in portfolio_data.get(cat_name, {}).items():
             if current_asset in all_assets_cache[cat_name]:

@@ -15,6 +15,7 @@ from app.utils import format_price
 market_bp = Blueprint('market', __name__)
 
 def handle_add_asset(request_form_key, asset_type, param):
+    """Helper function to process adding an asset to the user's portfolio."""
     if request.form.get(request_form_key) and current_user.is_authenticated:
         ticker = request.form.get(request_form_key).split()[1]
         with db_session.create_session() as db_sess:
@@ -29,6 +30,7 @@ def handle_add_asset(request_form_key, asset_type, param):
                     param['danger'] = f'{ticker}_a'
 @market_bp.route('/stocks', methods=['GET', 'POST'])
 def stocks():
+    """Renders the main stocks market page."""
     form = SearchTickerForm()
     form2 = ReloadDataForm()
     param = {
@@ -50,6 +52,7 @@ def stocks():
 
 @market_bp.route('/stocks/<string:letter>', methods=['GET', 'POST'])
 def available_stocks_for_letter(letter):
+    """Renders stocks filtered by their starting letter."""
     param = {'letter': letter.upper(), 'stocks': []}
     
     if current_user.is_authenticated:
@@ -83,6 +86,7 @@ def available_stocks_for_letter(letter):
 
 @market_bp.route('/crypto', methods=['GET', 'POST'])
 def crypto():
+    """Renders the main crypto market page."""
     form = SearchTickerForm()
     form2 = ReloadDataForm()
     param = {
@@ -104,6 +108,7 @@ def crypto():
 
 @market_bp.route('/crypto/<string:letter>', methods=['GET', 'POST'])
 def available_crypto_for_letter(letter):
+    """Renders cryptocurrencies filtered by their starting letter."""
     param = {'letter': letter.upper(), 'crypto': []}
     
     if current_user.is_authenticated:
@@ -126,6 +131,7 @@ def available_crypto_for_letter(letter):
 
 @market_bp.route('/fiat', methods=['GET', 'POST'])
 def fiat():
+    """Renders the main fiat currencies market page."""
     form = SearchTickerForm()
     form2 = ReloadDataForm()
     param = {
@@ -147,6 +153,7 @@ def fiat():
 
 @market_bp.route('/fiat/<string:letter>', methods=['GET', 'POST'])
 def available_fiat_for_letter(letter):
+    """Renders fiat currencies filtered by their starting letter."""
     param = {'letter': letter.upper(), 'fiats': []}
     
     if current_user.is_authenticated:

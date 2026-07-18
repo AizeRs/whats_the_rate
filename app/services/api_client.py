@@ -2,6 +2,7 @@ from app.constants import FINNHUB_APIKEY
 import requests
 
 def ticker_price(ticker):
+    """Fetches the current price and full quote for a given stock ticker."""
     try:
         response = requests.get(f'https://finnhub.io/api/v1/quote?symbol={ticker}&token={FINNHUB_APIKEY}').json()
         if 'c' in response and response['c'] != 0:

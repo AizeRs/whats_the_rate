@@ -12,6 +12,7 @@ api_bp = Blueprint('api', __name__)
 
 @api_bp.route('/api/help')
 def api_help():
+    """Returns a help message explaining the API usage."""
     return '''Для получения данных о стоимости вашего портфеля отправьте запрос на "/api/portfolio_price". \n \
            Параметры запроса: apikey="апи ключ, полученный в личном кабинете"&base_currency="Желаемая валюта в  \
            которой будет рассчитана цена портфеля. По умолчанию берётся валюта, выбранная в профиле"\n \
@@ -21,6 +22,7 @@ def api_help():
 
 @api_bp.route('/api/portfolio_price')
 def portfolio_price():
+    """Returns the total price of the user's portfolio based on current asset prices."""
     apikey = request.args.get('apikey', default=None, type=str)
     base_currency = request.args.get('base_currency', default='user', type=str)
     
@@ -58,6 +60,7 @@ def portfolio_price():
 
 @api_bp.route('/api/reload_portfolio')
 def reload_portfolio():
+    """Triggers a data update for all assets in the user's portfolio."""
     apikey = request.args.get('apikey', default=None, type=str)
 
     if apikey is None:

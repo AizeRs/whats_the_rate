@@ -8,10 +8,12 @@ login_manager = LoginManager()
 
 @login_manager.user_loader
 def load_user(user_id):
+    """Loads a user from the database by their ID."""
     with db_session.create_session() as db_sess:
         return db_sess.query(User).get(user_id)
 
 def create_app():
+    """Creates and configures the Flask application instance."""
     # Set paths to templates and static directories located in the project root.
     import os
     base_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))

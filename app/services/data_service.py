@@ -4,6 +4,7 @@ from app.models.rates import StockRate, CryptoRate, FiatRate
 from .api_client import fetch_crypto_data, fetch_fiat_data, fetch_tickers_data
 
 def update_crypto_db():
+    """Updates the database with the latest cryptocurrency prices."""
     success, data = fetch_crypto_data()
     if not success:
         return False
@@ -25,6 +26,7 @@ def update_crypto_db():
         return False
 
 def update_currencies_db(main_symbols_dict):
+    """Updates the database with the latest fiat currency prices."""
     success, names, prices = fetch_fiat_data()
     if not success:
         return False
@@ -47,6 +49,7 @@ def update_currencies_db(main_symbols_dict):
         return False
 
 def update_tickers_db():
+    """Updates the database with the latest stock tickers."""
     try:
         my_list = fetch_tickers_data()
     except Exception:
@@ -70,6 +73,7 @@ def update_tickers_db():
         return False
 
 def save_ticker_price(ticker, price):
+    """Saves a new price for a specific stock ticker."""
     try:
         session = create_session()
         stock = session.query(StockRate).filter(StockRate.ticker == ticker).first()

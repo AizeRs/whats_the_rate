@@ -1,3 +1,7 @@
+"""
+Main application entry point.
+Initializes the database, loads symbols, and starts the Flask server.
+"""
 from app import create_app
 from app.models import db_session
 from app.constants import HOST, PORT

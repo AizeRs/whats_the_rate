@@ -12,12 +12,14 @@ main_bp = Blueprint('main', __name__)
 @main_bp.route('/')
 @main_bp.route('/index')
 def index():
+    """Renders the main index page."""
     return render_template('index.html')
 
 
 @main_bp.route('/user', methods=['GET', 'POST'])
 @login_required
 def user():
+    """Handles user profile page, password changes, and portfolio creation."""
     pass_form = ChangePassForm()
     param = {
         'pass_form': pass_form,
@@ -66,7 +68,8 @@ def user():
                 if flag and (portfolio_form.submit_private.data or portfolio_form.submit_public.data):
                     user = db_sess.query(User).get(current_user.id)
                     db_sess.add(pf)
-                    db_sess.flush()  # Ensure ID is generated before assignment.
+                    # Flush to generate ID before assignment to user
+                    db_sess.flush()
                     user.portfolio_id = pf.id
                     db_sess.commit()
 
@@ -76,6 +79,7 @@ def user():
 @main_bp.route('/user/set_main_currency/<string:currency>')
 @login_required
 def user_set_main_currency(currency):
+    """Updates the user's preferred main currency."""
     if currency not in MAIN_SYMBOLS.keys():
         return redirect(url_for('main.user'))
 

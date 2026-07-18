@@ -1,4 +1,6 @@
-import os
+"""
+Defines main currency symbols and provides a function to load their rates.
+"""
 from app.models.db_session import create_session
 from app.models.rates import FiatRate
 

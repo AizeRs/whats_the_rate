@@ -8,6 +8,7 @@ auth_bp = Blueprint('auth', __name__)
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
+    """Handles user login authentication."""
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
         
@@ -32,12 +33,14 @@ def login():
 
 @auth_bp.route('/logout')
 def logout():
+    """Logs out the current user."""
     logout_user()
     return redirect(url_for("main.index"))
 
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
+    """Handles new user registration."""
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
         

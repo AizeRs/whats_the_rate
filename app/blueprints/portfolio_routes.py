@@ -12,6 +12,7 @@ portfolio_bp = Blueprint('portfolio', __name__)
 
 @portfolio_bp.route('/portfolios/<username>', methods=['GET', 'POST'])
 def portfolios_username(username):
+    """Renders the portfolio page for a specific user, handling asset updates and data reloads."""
     param = {'username': username, 'stocks': [], 'cryptos': [], 'fiats': []}
     
     with db_session.create_session() as db_sess:
@@ -51,10 +52,10 @@ def portfolios_username(username):
                 if data['fiat']:
                     update_currencies_db(MAIN_SYMBOLS)
 
-        # Populate asset lists with current prices from db.
+        # Fetch current asset prices from the database
         assets_cache = get_all_assets_dict()
 
-        # Process portfolio asset updates.
+        # Handle manual updates to asset quantities
         if request.method == 'POST' and not request.form.get('reload'):
             def handle_asset_update(dict_key):
                 for symbol in data.get(dict_key, {}).keys():
@@ -78,7 +79,7 @@ def portfolios_username(username):
                 if not handle_asset_update('crypto'):
                     handle_asset_update('fiat')
                     
-            # Refresh data after update
+            # Reload dictionary after changes
             data = pf.get_dict()
 
         details = get_portfolio_details(data, assets_cache, pref_symbol)

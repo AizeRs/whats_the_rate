@@ -9,6 +9,7 @@ __factory = None
 
 
 def global_init(db_file):
+    """Initializes the database connection and session factory."""
     global __factory
 
     if __factory:
@@ -29,6 +30,7 @@ def global_init(db_file):
 
 
 def create_session() -> Session:
+    """Creates and returns a new database session."""
     global __factory
     if not __factory:
         raise Exception("Сначала необходимо вызвать метод global_init")
