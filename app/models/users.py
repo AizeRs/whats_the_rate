@@ -1,7 +1,7 @@
 import sqlalchemy
 from .db_session import SqlAlchemyBase
 from flask_login import UserMixin
-from hashlib import sha256
+from werkzeug.security import generate_password_hash, check_password_hash
 
 
 class User(SqlAlchemyBase, UserMixin):
@@ -13,10 +13,10 @@ class User(SqlAlchemyBase, UserMixin):
     main_currency = sqlalchemy.Column(sqlalchemy.String, nullable=True, default='USD')
     hashed_password = sqlalchemy.Column(sqlalchemy.String, nullable=True)
     portfolio_id = sqlalchemy.Column(sqlalchemy.Integer)
-    apikey = sqlalchemy.Column(sqlalchemy.Integer, default=None)
+    apikey = sqlalchemy.Column(sqlalchemy.String, default=None)
 
     def set_password(self, password):
-        self.hashed_password = sha256(str(password).encode('utf-8')).hexdigest()
+        self.hashed_password = generate_password_hash(password)
 
     def check_password(self, password):
-        return self.hashed_password == sha256(str(password).encode('utf-8')).hexdigest()
+        return check_password_hash(self.hashed_password, password)

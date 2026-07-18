@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, SubmitField
-from wtforms.validators import DataRequired, Email
+from wtforms.validators import DataRequired, Email, Length, EqualTo
 
 
 class LoginForm(FlaskForm):
@@ -12,8 +12,11 @@ class LoginForm(FlaskForm):
 
 class RegisterForm(FlaskForm):
     username = StringField('Логин', validators=[DataRequired()])
-    email = StringField('Электронная почта', validators=[DataRequired(), Email()])
-    password = PasswordField('Пароль', validators=[DataRequired()])
+    email = StringField('Электронная почта', validators=[DataRequired(), Email(message="Некорректный email")])
+    password = PasswordField('Пароль', validators=[
+        DataRequired(), 
+        Length(min=5, message="Минимальная длина пароля - 5 символов")
+    ])
     submit = SubmitField('Зарегистрироваться')
 
 
@@ -28,8 +31,14 @@ class ReloadDataForm(FlaskForm):
 
 class ChangePassForm(FlaskForm):
     old_password = PasswordField('Старый пароль', validators=[DataRequired()])
-    new_password = PasswordField('Новый пароль', validators=[DataRequired()])
-    new_password_submit = PasswordField('Повтор нового пароля', validators=[DataRequired()])
+    new_password = PasswordField('Новый пароль', validators=[
+        DataRequired(),
+        Length(min=5, message="Минимальная длина пароля - 5 символов")
+    ])
+    new_password_submit = PasswordField('Повтор нового пароля', validators=[
+        DataRequired(),
+        EqualTo('new_password', message="Пароли не совпадают")
+    ])
     submit_pass = SubmitField('Сменить пароль')
 
 

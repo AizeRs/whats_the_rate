@@ -6,7 +6,7 @@ from app.services.symbols import MAIN_SYMBOLS
 from app.services.data_service import update_crypto_db, update_currencies_db, save_ticker_price, get_all_assets_dict
 from app.services.api_client import ticker_price
 
-from app.utils import format_price
+from app.utils import format_price, get_portfolio_details
 
 api_bp = Blueprint('api', __name__)
 
@@ -21,14 +21,14 @@ def api_help():
 
 @api_bp.route('/api/portfolio_price')
 def portfolio_price():
-    apikey = request.args.get('apikey', default=None, type=int)
+    apikey = request.args.get('apikey', default=None, type=str)
     base_currency = request.args.get('base_currency', default='user', type=str)
     
     if apikey is None:
-        return jsonify({'Error': 'No apikey'})
+        return jsonify({'Error': 'No apikey'}), 401
         
     if base_currency not in MAIN_SYMBOLS and base_currency != 'user':
-        return jsonify({'Error': f'base_currency must be one of: {list(MAIN_SYMBOLS.keys())}'})
+        return jsonify({'Error': f'base_currency must be one of: {list(MAIN_SYMBOLS.keys())}'}), 400
         
     if base_currency != 'user':
         pref_symbol = MAIN_SYMBOLS[base_currency]
@@ -36,68 +36,44 @@ def portfolio_price():
     with db_session.create_session() as db_sess:
         user = db_sess.query(User).filter(User.apikey == apikey).first()
         if not user:
-            return jsonify({'Error': 'Invalid apikey'})
+            return jsonify({'Error': 'Invalid apikey'}), 401
             
         if base_currency == 'user':
             pref_symbol = MAIN_SYMBOLS[user.main_currency]
             
         if not user.portfolio_id:
-            return jsonify({'Error': 'User has no portfolio'})
+            return jsonify({'Error': 'User has no portfolio'}), 404
             
         portfolio = db_sess.query(Portfolio).filter(Portfolio.id == user.portfolio_id).first()
         if not portfolio:
-            return jsonify({'Internal Error': 'Portfolio does not exist'})
+            return jsonify({'Internal Error': 'Portfolio does not exist'}), 500
 
         data = portfolio.get_dict()
 
-    response = 0.0
     all_assets = get_all_assets_dict()
+    details = get_portfolio_details(data, all_assets, pref_symbol)
     
-    for current_stock, count in data['stocks'].items():
-        if current_stock in all_assets['stocks']:
-            try:
-                response += float(all_assets['stocks'][current_stock][1]) * count
-            except ValueError:
-                pass
-
-    for current_crypto, count in data['crypto'].items():
-        if current_crypto in all_assets['crypto']:
-            try:
-                response += float(all_assets['crypto'][current_crypto][1]) * count
-            except ValueError:
-                pass
-                
-    for current_fiat, count in data['fiat'].items():
-        if current_fiat in all_assets['fiat']:
-            try:
-                response += float(all_assets['fiat'][current_fiat][1]) * count
-            except ValueError:
-                pass
-
-    float_response = response / pref_symbol[1]
-    str_response = f"{format_price(float_response)}{pref_symbol[0]}"
-
-    return jsonify({'price': str_response, 'price_float': float_response})
+    return jsonify({'price': details['sums']['total_str'], 'price_float': details['sums']['total_val']})
 
 
 @api_bp.route('/api/reload_portfolio')
 def reload_portfolio():
-    apikey = request.args.get('apikey', default=None, type=int)
+    apikey = request.args.get('apikey', default=None, type=str)
 
     if apikey is None:
-        return jsonify({'Error': 'No apikey'})
+        return jsonify({'Error': 'No apikey'}), 401
         
     with db_session.create_session() as db_sess:
         user = db_sess.query(User).filter(User.apikey == apikey).first()
         if not user:
-            return jsonify({'Error': 'Invalid apikey'})
+            return jsonify({'Error': 'Invalid apikey'}), 401
 
         if not user.portfolio_id:
-            return jsonify({'Error': 'User has no portfolio'})
+            return jsonify({'Error': 'User has no portfolio'}), 404
             
         portfolio = db_sess.query(Portfolio).filter(Portfolio.id == user.portfolio_id).first()
         if not portfolio:
-            return jsonify({'Internal Error': 'Portfolio does not exist'})
+            return jsonify({'Internal Error': 'Portfolio does not exist'}), 500
             
         data = portfolio.get_dict()
 

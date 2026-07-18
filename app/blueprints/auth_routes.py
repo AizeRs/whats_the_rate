@@ -59,10 +59,6 @@ def register():
                 form.username.errors.append('Имя пользователя не должно содержать символ "@"')
                 return render_template('register.html', title='Авторизация', form=form)
                 
-            if len(form.password.data) < 5:
-                form.password.errors.append("Минимальная длина пароля - 5 символов")
-                return render_template('register.html', title='Авторизация', form=form)
-                
             user = User(email=email, username=username)
             user.set_password(form.password.data)
             db_sess.add(user)

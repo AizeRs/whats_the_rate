@@ -14,6 +14,19 @@ from app.utils import format_price
 
 market_bp = Blueprint('market', __name__)
 
+def handle_add_asset(request_form_key, asset_type, param):
+    if request.form.get(request_form_key) and current_user.is_authenticated:
+        ticker = request.form.get(request_form_key).split()[1]
+        with db_session.create_session() as db_sess:
+            pf = db_sess.query(Portfolio).filter(Portfolio.id == current_user.portfolio_id).first()
+            if not pf:
+                param['danger'] = f'{ticker}_a'
+            else:
+                if pf.set_in_dict(asset_type, ticker, 1) != 'Too Many Stocks Error':
+                    db_sess.commit()
+                    param['success'] = f'{ticker}_a'
+                else:
+                    param['danger'] = f'{ticker}_a'
 @market_bp.route('/stocks', methods=['GET', 'POST'])
 def stocks():
     form = SearchTickerForm()
@@ -56,18 +69,7 @@ def available_stocks_for_letter(letter):
             else:
                 param['danger'] = f'{ticker}_r'
                 
-        if request.form.get('add_stock') and current_user.is_authenticated:
-            ticker = request.form.get('add_stock').split()[1]
-            with db_session.create_session() as db_sess:
-                pf = db_sess.query(Portfolio).filter(Portfolio.id == current_user.portfolio_id).first()
-                if not pf:
-                    param['danger'] = f'{ticker}_a'
-                else:
-                    if pf.set_in_dict('stocks', ticker, 1) != 'Too Many Stocks Error':
-                        db_sess.commit()
-                        param['success'] = f'{ticker}_a'
-                    else:
-                        param['danger'] = f'{ticker}_a'
+        handle_add_asset('add_stock', 'stocks', param)
 
     raw_stocks = get_stocks_by_letter(letter)
     for stock in raw_stocks:
@@ -117,16 +119,7 @@ def available_crypto_for_letter(letter):
         param['crypto'].append({'symbol': crypto['symbol'], 'name': crypto['name'], 'price': price_val})
 
     if request.method == 'POST':
-        if request.form.get('add_crypto') and current_user.is_authenticated:
-            ticker = request.form.get('add_crypto').split()[1]
-            with db_session.create_session() as db_sess:
-                pf = db_sess.query(Portfolio).filter(Portfolio.id == current_user.portfolio_id).first()
-                if not pf:
-                    param['danger'] = f'{ticker}_a'
-                else:
-                    pf.set_in_dict('crypto', ticker, 1)
-                    db_sess.commit()
-                    param['success'] = f'{ticker}_a'
+        handle_add_asset('add_crypto', 'crypto', param)
 
     return render_template('available_crypto_for_letter.html', **param)
 
@@ -169,15 +162,6 @@ def available_fiat_for_letter(letter):
         param['fiats'].append({'symbol': fiat['symbol'], 'name': fiat['name'], 'price': price_val})
 
     if request.method == 'POST':
-        if request.form.get('add_fiat') and current_user.is_authenticated:
-            ticker = request.form.get('add_fiat').split()[1]
-            with db_session.create_session() as db_sess:
-                pf = db_sess.query(Portfolio).filter(Portfolio.id == current_user.portfolio_id).first()
-                if not pf:
-                    param['danger'] = f'{ticker}_a'
-                else:
-                    pf.set_in_dict('fiat', ticker, 1)
-                    db_sess.commit()
-                    param['success'] = f'{ticker}_a'
+        handle_add_asset('add_fiat', 'fiat', param)
 
     return render_template('available_fiat_for_letter.html', **param)

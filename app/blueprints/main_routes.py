@@ -5,7 +5,7 @@ from app.models import db_session
 from app.models.users import User
 from app.models.portfolios import Portfolio
 from app.services.symbols import MAIN_SYMBOLS
-from random import randint
+import secrets
 
 main_bp = Blueprint('main', __name__)
 
@@ -37,28 +37,25 @@ def user():
     if request.method == 'POST':
         with db_session.create_session() as db_sess:
             if request.form.get('create_apikey') and current_user.apikey is None:
-                apikey = randint(1000000000000000, 9999999999999999)
-                usr = db_sess.query(User).filter(User.id == current_user.id).one()
+                apikey = secrets.token_hex(16)
+                usr = db_sess.query(User).get(current_user.id)
                 usr.apikey = apikey
-                current_user.apikey = apikey
                 db_sess.commit()
+                current_user.apikey = apikey
                 
             if pass_form.submit_pass.data:
-                if not current_user.check_password(pass_form.old_password.data):
-                    pass_form.old_password.errors = ['Неверный пароль']
-                    param['pass_submit'] = 1
-                elif len(pass_form.new_password.data) < 5:
-                    pass_form.new_password.errors = ['Минимальная длина пароля - 5 символов']
-                    param['pass_submit'] = 1
-                elif pass_form.new_password.data != pass_form.new_password_submit.data:
-                    pass_form.new_password_submit.errors = ['Пароли не совпадают']
-                    param['pass_submit'] = 1
+                if pass_form.validate():
+                    if not current_user.check_password(pass_form.old_password.data):
+                        pass_form.old_password.errors = ['Неверный пароль']
+                        param['pass_submit'] = 1
+                    else:
+                        usr = db_sess.query(User).get(current_user.id)
+                        usr.set_password(pass_form.new_password.data)
+                        db_sess.commit()
+                        current_user.hashed_password = usr.hashed_password
+                        param['pass_submit'] = 0
                 else:
-                    current_user.set_password(pass_form.new_password.data)
-                    usr = db_sess.query(User).get(current_user.id)
-                    usr.hashed_password = current_user.hashed_password
-                    db_sess.commit()
-                    param['pass_submit'] = 0
+                    param['pass_submit'] = 1
 
             if not current_user.portfolio_id:
                 if flag and portfolio_form.submit_private.data:
