@@ -23,6 +23,7 @@ def create_app():
         static_folder=os.path.join(base_dir, 'static')
     )
     app.config['SECRET_KEY'] = SECRET_KEY
+    app.config['TEMPLATES_AUTO_RELOAD'] = True
 
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
