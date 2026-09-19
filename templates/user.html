@@ -1,104 +1,422 @@
-<!DOCTYPE html>
-
-<html lang="en">
 {% extends "base.html" %}
+
+{% block title %}Мой аккаунт · What's the rate{% endblock %}
+
 {% block content %}
-<head>
-    <meta charset="UTF-8">
-    <title>Мой аккаунт · What's the rate</title>
-</head>
-<body>
-<h1>Аккаунт пользователя {{ current_user.username }}</h1>
-<div class="d-grid gap-2 col-6 mx-auto">
-    <a class="btn btn-primary mx-auto" role="button" href="logout">Выйти из аккаунта</a>
-</div>
-<br>
-<br>
-<h3>Смена пароля</h3>
-<form action="" method="post">
-    {{ pass_form.hidden_tag() }}
-    <p>
-        {{ pass_form.old_password.label }}<br>
-        {{ pass_form.old_password(class="form-control", type="text") }}<br>
-        {% for error in pass_form.old_password.errors %}
-    <div class="alert alert-danger" role="alert">
-        {{ error }}
+<div class="flex flex-col w-full">
+    <div class="w-full max-w-[1200px] mx-auto py-space-xl">
+        <!-- Top Bar: User Info & Logout -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-md mb-space-xl pb-space-lg border-b border-outline-variant/30">
+            <div class="flex items-center gap-space-md">
+                <div class="w-14 h-14 rounded-xl bg-surface-container-high border border-outline-variant/40 flex items-center justify-center text-primary font-headline-lg font-bold shadow-md">
+                    {{ current_user.username[0]|upper }}
+                </div>
+                <div class="flex flex-col">
+                    <div class="flex items-center gap-space-xs">
+                        <h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">
+                            Аккаунт пользователя {{ current_user.username }}
+                        </h1>
+                        <span class="px-2 py-0.5 rounded bg-primary-container/20 text-primary font-label-ticker text-[11px] uppercase tracking-wider">
+                            User
+                        </span>
+                    </div>
+                    <p class="font-body-sm text-body-sm text-outline flex items-center gap-2">
+                        <span>{{ current_user.email }}</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Action: Logout -->
+            <a href="{{ url_for('auth.logout') }}" class="inline-flex items-center justify-center gap-space-xs px-space-md py-space-sm rounded-lg bg-error-container/20 hover:bg-error-container/30 text-error transition-all duration-150 shadow-sm active:scale-[0.98] self-start sm:self-auto cursor-pointer">
+                <span class="material-symbols-outlined text-[18px]">logout</span>
+                <span class="font-body-md text-body-md font-semibold">Выйти из аккаунта</span>
+            </a>
+        </div>
+
+        <!-- Main Grid Layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
+            <!-- Left Column: Security & Password Change -->
+            <div class="flex flex-col gap-space-lg lg:col-span-6">
+                <section class="bg-surface-container rounded-xl p-space-lg sm:p-space-xl shadow-lg relative overflow-hidden border border-outline-variant/20">
+                    <div class="absolute top-0 right-0 w-48 h-48 bg-primary-container/5 rounded-full blur-3xl pointer-events-none"></div>
+                    
+                    <div class="flex items-center gap-space-sm mb-space-lg pb-space-sm border-b border-outline-variant/30">
+                        <div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
+                            <span class="material-symbols-outlined text-[20px]">lock_reset</span>
+                        </div>
+                        <div>
+                            <h2 class="font-headline-md text-headline-md text-on-surface">Смена пароля</h2>
+                            <p class="font-body-sm text-body-sm text-outline">Обновите учетные данные для доступа к терминалу</p>
+                        </div>
+                    </div>
+
+                    <form action="" method="post" class="flex flex-col gap-space-md" novalidate>
+                        {{ pass_form.hidden_tag() }}
+
+                        <!-- Old Password -->
+                        <div class="flex flex-col gap-space-xs">
+                            <label class="font-body-sm text-body-sm text-on-surface-variant font-medium" for="old-pass">
+                                Старый пароль
+                            </label>
+                            <div class="relative flex items-center">
+                                <input
+                                    type="password"
+                                    name="{{ pass_form.old_password.name }}"
+                                    id="old-pass"
+                                    placeholder="Текущий пароль"
+                                    required
+                                    class="w-full bg-surface-container-lowest text-on-surface font-body-md text-body-md rounded-lg px-space-md py-space-sm pr-10 border border-outline-variant/30 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/40 transition-all placeholder:text-outline/50 shadow-inner"
+                                >
+                                <button
+                                    type="button"
+                                    class="absolute right-3 text-outline hover:text-on-surface transition-colors focus:outline-none flex items-center justify-center"
+                                    onclick="togglePasswordVisibility('old-pass', this)"
+                                    tabindex="-1"
+                                >
+                                    <span class="material-symbols-outlined text-[18px]">visibility</span>
+                                </button>
+                            </div>
+                            {% for error in pass_form.old_password.errors %}
+                            <div class="text-error text-body-sm flex items-center gap-1 mt-1">
+                                <span class="material-symbols-outlined text-[14px]">warning</span>
+                                <span>{{ error }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- New Password -->
+                        <div class="flex flex-col gap-space-xs">
+                            <label class="font-body-sm text-body-sm text-on-surface-variant font-medium" for="new-pass">
+                                Новый пароль
+                            </label>
+                            <div class="relative flex items-center">
+                                <input
+                                    type="password"
+                                    name="{{ pass_form.new_password.name }}"
+                                    id="new-pass"
+                                    placeholder="Минимум 5 символов"
+                                    required
+                                    class="w-full bg-surface-container-lowest text-on-surface font-body-md text-body-md rounded-lg px-space-md py-space-sm pr-10 border border-outline-variant/30 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/40 transition-all placeholder:text-outline/50 shadow-inner"
+                                >
+                                <button
+                                    type="button"
+                                    class="absolute right-3 text-outline hover:text-on-surface transition-colors focus:outline-none flex items-center justify-center"
+                                    onclick="togglePasswordVisibility('new-pass', this)"
+                                    tabindex="-1"
+                                >
+                                    <span class="material-symbols-outlined text-[18px]">visibility</span>
+                                </button>
+                            </div>
+                            {% for error in pass_form.new_password.errors %}
+                            <div class="text-error text-body-sm flex items-center gap-1 mt-1">
+                                <span class="material-symbols-outlined text-[14px]">warning</span>
+                                <span>{{ error }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Repeat New Password -->
+                        <div class="flex flex-col gap-space-xs">
+                            <label class="font-body-sm text-body-sm text-on-surface-variant font-medium" for="confirm-pass">
+                                Повтор нового пароля
+                            </label>
+                            <div class="relative flex items-center">
+                                <input
+                                    type="password"
+                                    name="{{ pass_form.new_password_submit.name }}"
+                                    id="confirm-pass"
+                                    placeholder="Повторите новый пароль"
+                                    required
+                                    class="w-full bg-surface-container-lowest text-on-surface font-body-md text-body-md rounded-lg px-space-md py-space-sm pr-10 border border-outline-variant/30 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/40 transition-all placeholder:text-outline/50 shadow-inner"
+                                >
+                                <button
+                                    type="button"
+                                    class="absolute right-3 text-outline hover:text-on-surface transition-colors focus:outline-none flex items-center justify-center"
+                                    onclick="togglePasswordVisibility('confirm-pass', this)"
+                                    tabindex="-1"
+                                >
+                                    <span class="material-symbols-outlined text-[18px]">visibility</span>
+                                </button>
+                            </div>
+                            {% for error in pass_form.new_password_submit.errors %}
+                            <div class="text-error text-body-sm flex items-center gap-1 mt-1">
+                                <span class="material-symbols-outlined text-[14px]">warning</span>
+                                <span>{{ error }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Action Button -->
+                        <div class="pt-space-sm flex justify-end">
+                            <button
+                                type="submit"
+                                name="{{ pass_form.submit_pass.name }}"
+                                value="1"
+                                class="w-full sm:w-auto inline-flex items-center justify-center gap-space-xs px-space-lg py-space-sm rounded-lg bg-primary hover:bg-primary-container text-on-primary font-body-md text-body-md font-semibold transition-all duration-150 shadow-[0_4px_14px_rgba(77,142,255,0.3)] active:scale-[0.98] cursor-pointer"
+                            >
+                                <span>Сменить пароль</span>
+                                <span class="material-symbols-outlined text-[18px]">check</span>
+                            </button>
+                        </div>
+
+                        <!-- Feedback Alerts -->
+                        {% if pass_submit == 0 %}
+                        <div class="mt-space-xs p-space-sm rounded-lg bg-tertiary-container/20 text-tertiary font-body-sm text-body-sm flex items-center gap-2">
+                            <span class="material-symbols-outlined text-[16px]">check_circle</span>
+                            <span>Пароль успешно обновлен. Данные сохранены.</span>
+                        </div>
+                        {% elif pass_submit == 1 %}
+                        <div class="mt-space-xs p-space-sm rounded-lg bg-error-container/20 text-error font-body-sm text-body-sm flex items-center gap-2">
+                            <span class="material-symbols-outlined text-[16px]">error</span>
+                            <span>Ошибка при смене пароля. Проверьте правильность введенных данных.</span>
+                        </div>
+                        {% endif %}
+                    </form>
+                </section>
+            </div>
+
+            <!-- Right Column: Account Management & Quick Actions -->
+            <div class="flex flex-col gap-space-lg lg:col-span-6">
+                <section class="bg-surface-container rounded-xl p-space-lg sm:p-space-xl shadow-lg relative border border-outline-variant/20">
+                    <div class="flex items-center gap-space-sm mb-space-md pb-space-sm border-b border-outline-variant/30">
+                        <div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
+                            <span class="material-symbols-outlined text-[20px]">manage_accounts</span>
+                        </div>
+                        <div>
+                            <h2 class="font-headline-md text-headline-md text-on-surface">Управление</h2>
+                            <p class="font-body-sm text-body-sm text-outline">Быстрые действия профиля</p>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-space-sm">
+                        <!-- Action 1: Create Portfolio or Link to Portfolio -->
+                        {% if not user_portfolio_link %}
+                        <div class="relative">
+                            <button
+                                type="button"
+                                onclick="togglePortfolioDropdown()"
+                                class="w-full flex items-center justify-between p-space-md rounded-lg bg-surface-container-low hover:bg-surface-container-high text-on-surface transition-all duration-150 cursor-pointer shadow-sm group border border-outline-variant/20"
+                            >
+                                <div class="flex items-center gap-space-sm">
+                                    <div class="w-9 h-9 rounded-lg bg-primary-container/20 flex items-center justify-center text-primary group-hover:scale-105 transition-transform">
+                                        <span class="material-symbols-outlined text-[20px]">account_balance_wallet</span>
+                                    </div>
+                                    <div class="text-left">
+                                        <span class="font-body-md text-body-md font-semibold block text-on-surface">Создать портфель</span>
+                                        <span class="font-body-sm text-body-sm text-outline block">Инвестиции, крипта или фиат</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-1 text-outline group-hover:text-primary transition-colors">
+                                    <span class="material-symbols-outlined text-[20px]">expand_more</span>
+                                </div>
+                            </button>
+
+                            <!-- Portfolio Dropdown Menu -->
+                            <div id="portfolio-dropdown" class="hidden absolute top-full left-0 right-0 mt-1.5 z-30 bg-surface-container-high/95 backdrop-blur-xl rounded-xl p-2 shadow-2xl border border-outline-variant/40 flex flex-col gap-1">
+                                <form action="" method="post" class="flex flex-col gap-1">
+                                    {{ portfolio_form.hidden_tag() }}
+                                    <button
+                                        type="submit"
+                                        name="{{ portfolio_form.submit_private.name }}"
+                                        value="1"
+                                        class="w-full flex items-center justify-between px-space-md py-2.5 rounded-lg text-on-surface hover:bg-surface-container font-body-sm text-body-sm transition-colors text-left cursor-pointer"
+                                    >
+                                        <span class="flex items-center gap-2">
+                                            <span class="material-symbols-outlined text-[16px] text-tertiary">lock</span>
+                                            Приватный портфель (только для вас)
+                                        </span>
+                                        <span class="font-label-ticker text-[10px] text-outline px-1.5 py-0.5 rounded bg-surface-container">PRIVATE</span>
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        name="{{ portfolio_form.submit_public.name }}"
+                                        value="1"
+                                        class="w-full flex items-center justify-between px-space-md py-2.5 rounded-lg text-on-surface hover:bg-surface-container font-body-sm text-body-sm transition-colors text-left cursor-pointer"
+                                    >
+                                        <span class="flex items-center gap-2">
+                                            <span class="material-symbols-outlined text-[16px] text-primary">public</span>
+                                            Публичный портфель (доступ по ссылке)
+                                        </span>
+                                        <span class="font-label-ticker text-[10px] text-outline px-1.5 py-0.5 rounded bg-surface-container">PUBLIC</span>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        {% else %}
+                        <a
+                            href="{{ user_portfolio_link }}"
+                            class="w-full flex items-center justify-between p-space-md rounded-lg bg-surface-container-low hover:bg-surface-container-high text-on-surface transition-all duration-150 cursor-pointer shadow-sm group border border-outline-variant/20"
+                        >
+                            <div class="flex items-center gap-space-sm">
+                                <div class="w-9 h-9 rounded-lg bg-primary-container/20 flex items-center justify-center text-primary group-hover:scale-105 transition-transform">
+                                    <span class="material-symbols-outlined text-[20px]">account_balance_wallet</span>
+                                </div>
+                                <div class="text-left">
+                                    <span class="font-body-md text-body-md font-semibold block text-on-surface">Ваш портфель</span>
+                                    <span class="font-body-sm text-body-sm text-outline block">Просмотр и управление позициями</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-1 text-outline group-hover:text-primary transition-colors">
+                                <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+                            </div>
+                        </a>
+                        {% endif %}
+
+                        <!-- Action 2: Change Base Currency -->
+                        <div class="relative">
+                            <button
+                                type="button"
+                                onclick="toggleCurrencyDropdown()"
+                                class="w-full flex items-center justify-between p-space-md rounded-lg bg-surface-container-low hover:bg-surface-container-high text-on-surface transition-all duration-150 cursor-pointer shadow-sm group border border-outline-variant/20"
+                            >
+                                <div class="flex items-center gap-space-sm">
+                                    <div class="w-9 h-9 rounded-lg bg-secondary-container/30 flex items-center justify-center text-secondary group-hover:scale-105 transition-transform">
+                                        <span class="material-symbols-outlined text-[20px]">currency_exchange</span>
+                                    </div>
+                                    <div class="text-left">
+                                        <span class="font-body-md text-body-md font-semibold block text-on-surface">Изменить основную валюту</span>
+                                        <span class="font-body-sm text-body-sm text-outline block">Базовая ставка пересчета</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-space-xs">
+                                    <span class="px-2 py-0.5 rounded bg-surface-container-highest font-label-ticker text-label-ticker text-primary" id="current-currency-badge">
+                                        {{ current_user.main_currency }}
+                                    </span>
+                                    <span class="material-symbols-outlined text-[20px] text-outline group-hover:text-primary transition-colors">expand_more</span>
+                                </div>
+                            </button>
+
+                            <!-- Currency Dropdown Menu -->
+                            {% set currency_names = {
+                                'USD': 'Доллар США',
+                                'EUR': 'Евро',
+                                'GBP': 'Британский фунт',
+                                'JPY': 'Японская иена',
+                                'CHF': 'Швейцарский франк',
+                                'BTC': 'Биткоин'
+                            } %}
+                            <div id="currency-dropdown" class="hidden absolute top-full left-0 right-0 mt-1.5 z-30 bg-surface-container-high/95 backdrop-blur-xl rounded-xl p-2 shadow-2xl border border-outline-variant/40 flex flex-col gap-1">
+                                {% for currency, symbol in main_currencies %}
+                                <a
+                                    href="{{ url_for('main.user_set_main_currency', currency=currency) }}"
+                                    class="w-full flex items-center justify-between px-space-md py-2.5 rounded-lg text-on-surface hover:bg-surface-container font-body-sm text-body-sm transition-colors text-left group cursor-pointer"
+                                >
+                                    <div class="flex items-center gap-space-sm">
+                                        <span class="font-label-ticker font-semibold text-on-surface">{{ currency }}</span>
+                                        <span class="text-xs text-outline">{{ currency_names.get(currency, '') }}</span>
+                                    </div>
+                                    <span class="font-label-ticker font-bold text-primary px-2 py-0.5 rounded bg-surface-container group-hover:bg-surface-container-low transition-colors">{{ symbol }}</span>
+                                </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Action 3: Create or View API Key -->
+                        {% if not current_user.apikey %}
+                        <form action="" method="post">
+                            <button
+                                type="submit"
+                                name="create_apikey"
+                                value="1"
+                                class="w-full flex items-center justify-between p-space-md rounded-lg bg-surface-container-low hover:bg-surface-container-high text-on-surface transition-all duration-150 cursor-pointer shadow-sm group border border-outline-variant/20"
+                            >
+                                <div class="flex items-center gap-space-sm">
+                                    <div class="w-9 h-9 rounded-lg bg-tertiary-container/20 flex items-center justify-center text-tertiary group-hover:scale-105 transition-transform">
+                                        <span class="material-symbols-outlined text-[20px]">key</span>
+                                    </div>
+                                    <div class="text-left">
+                                        <span class="font-body-md text-body-md font-semibold block text-on-surface">Создать апи-ключ</span>
+                                        <span class="font-body-sm text-body-sm text-outline block">REST &amp; WebSocket API доступ</span>
+                                    </div>
+                                </div>
+                                <div class="w-7 h-7 rounded bg-surface-container-highest flex items-center justify-center text-outline group-hover:text-tertiary transition-colors">
+                                    <span class="material-symbols-outlined text-[16px]">add</span>
+                                </div>
+                            </button>
+                        </form>
+                        {% else %}
+                        <div class="p-space-md rounded-lg bg-surface-container-lowest border border-outline-variant/30 flex flex-col gap-2">
+                            <div class="flex items-center justify-between">
+                                <span class="font-label-ticker text-[11px] text-tertiary uppercase">Активный API-ключ</span>
+                                <span class="font-body-sm text-[11px] text-outline">REST API доступ</span>
+                            </div>
+                            <div class="flex items-center justify-between gap-2 bg-surface-container px-3 py-2 rounded border border-outline-variant/20">
+                                <code class="font-label-numeric-sm text-label-numeric-sm text-primary select-all truncate" id="api-key-value">{{ current_user.apikey }}</code>
+                                <button
+                                    type="button"
+                                    class="text-outline hover:text-on-surface transition-colors flex items-center justify-center"
+                                    onclick="copyApiKey(this)"
+                                    title="Скопировать"
+                                >
+                                    <span class="material-symbols-outlined text-[18px]">content_copy</span>
+                                </button>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </section>
+            </div>
+        </div>
     </div>
-    {% endfor %}
-    </p>
-    <p>
-        {{ pass_form.new_password.label }}<br>
-        {{ pass_form.new_password(class="form-control", type="password") }}<br>
-        {% for error in pass_form.new_password.errors %}
-    <div class="alert alert-danger" role="alert">
-        {{ error }}
-    </div>
-    {% endfor %}
-    </p>
-    <p>
-        {{ pass_form.new_password_submit.label }}<br>
-        {{ pass_form.new_password_submit(class="form-control", type="password") }}<br>
-        {% for error in pass_form.new_password_submit.errors %}
-    <div class="alert alert-danger" role="alert">
-        {{ error }}
-    </div>
-    {% endfor %}
-    {% if pass_submit == 0 %}
-    {{ pass_form.submit_pass(type="submit", class="btn btn-success") }}
-    {% elif pass_submit == 1 %}
-    {{ pass_form.submit_pass(type="submit", class="btn btn-danger") }}
-    {% else %}
-    {{ pass_form.submit_pass(type="submit", class="btn btn-primary") }}
-    {% endif %}
-    </p>
-    <div>{{ message }}</div>
-</form>
-<br>
-
-{% if not user_portfolio_link %}
-<div class="btn-group mx-auto" style="width: auto;" role="group">
-    <button id="btnGroupDrop1" type="button" class="btn btn-primary dropdown-toggle mx-auto" style="width: 200px;"
-            data-bs-toggle="dropdown" aria-expanded="false">
-        Создать портфель
-    </button>
-        <ul class="mx-auto dropdown-menu" style="width: auto;" aria-labelledby="btnGroupDrop1">
-            <form action="" method="post">
-                <li>{{ portfolio_form.submit_private(class="dropdown-item") }}</li>
-                <li>{{ portfolio_form.submit_public(class="dropdown-item") }}</li>
-            </form>
-        </ul>
-
 </div>
-{% else %}
-<a class="btn btn-primary" style="width: 200px;" role="button" href="{{ user_portfolio_link }}">
-    Ваш портфель
-</a>
-{% endif %}
 
-<div class="btn-group mx-auto" style="width: 300px; padding-left: 3%;" role="group">
-    <button id="btnGroupDrop2" type="button" class="btn btn-primary dropdown-toggle mx-auto" style="width: 200px;"
-            data-bs-toggle="dropdown" aria-expanded="false">
-        Изменить основную валюту
-    </button>
-    <ul class="mx-auto dropdown-menu" style="width: auto;" aria-labelledby="btnGroupDrop1">
-        {% for currency, symbol in main_currencies %}
-        <li><a class="dropdown-item" style="width: auto;" href="/user/set_main_currency/{{ currency }}">{{ currency }} : {{ symbol }}</a>
-        </li>
-        {% endfor %}
-    </ul>
-</div>
-<br>
-<br>
-{% if not current_user.apikey %}
-<form action="" method="post">
-    <button class="btn btn-primary" style="width: 200px; padding-left: 3%;" name="create_apikey" type="submit" value="1">
-        Создать апи-ключ
-    </button>
-</form>
-{% else %}
-<h2>Ваш апи-ключ: {{ current_user.apikey }}</h2>
-{% endif %}
+<script>
+function togglePasswordVisibility(inputId, button) {
+    const input = document.getElementById(inputId);
+    const icon = button.querySelector('.material-symbols-outlined');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.textContent = 'visibility_off';
+    } else {
+        input.type = 'password';
+        icon.textContent = 'visibility';
+    }
+}
 
-</body>
+function togglePortfolioDropdown() {
+    const dropdown = document.getElementById('portfolio-dropdown');
+    if (dropdown) {
+        dropdown.classList.toggle('hidden');
+    }
+    const cDrop = document.getElementById('currency-dropdown');
+    if (cDrop) cDrop.classList.add('hidden');
+}
+
+function toggleCurrencyDropdown() {
+    const dropdown = document.getElementById('currency-dropdown');
+    if (dropdown) {
+        dropdown.classList.toggle('hidden');
+    }
+    const pDrop = document.getElementById('portfolio-dropdown');
+    if (pDrop) pDrop.classList.add('hidden');
+}
+
+function copyApiKey(btn) {
+    const keyElement = document.getElementById('api-key-value');
+    if (!keyElement) return;
+    const text = keyElement.textContent.trim();
+    navigator.clipboard.writeText(text);
+    const icon = btn.querySelector('.material-symbols-outlined');
+    if (icon) {
+        icon.textContent = 'done';
+        icon.classList.add('text-tertiary');
+        setTimeout(() => {
+            icon.textContent = 'content_copy';
+            icon.classList.remove('text-tertiary');
+        }, 2000);
+    }
+}
+
+// Close dropdowns on outside click
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('#portfolio-dropdown') && !e.target.closest('button[onclick="togglePortfolioDropdown()"]')) {
+        const pDrop = document.getElementById('portfolio-dropdown');
+        if (pDrop) pDrop.classList.add('hidden');
+    }
+    if (!e.target.closest('#currency-dropdown') && !e.target.closest('button[onclick="toggleCurrencyDropdown()"]')) {
+        const cDrop = document.getElementById('currency-dropdown');
+        if (cDrop) cDrop.classList.add('hidden');
+    }
+});
+</script>
 {% endblock %}
-</html>
