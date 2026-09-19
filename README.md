@@ -32,7 +32,7 @@
 
 1. **Склонируйте проект и перейдите в директорию:**
    ```bash
-   git clone <ссылка-на-репозиторий>
+   git clone https://github.com/AizeRs/whats_the_rate.git
    cd whats_the_rate
    ```
 
