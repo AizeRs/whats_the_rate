@@ -13,19 +13,29 @@ def ticker_price(ticker):
         return None
 
 def fetch_crypto_data():
-    """Fetches top crypto data from CoinGecko."""
+    """Fetches top crypto data from CoinGecko with error handling and rate-limit safety."""
     lines = []
-    for page in (1, 2):
-        response = requests.get(
-            f'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page={page}'
-        ).json()
-        if isinstance(response, dict) and 'error' in response:
-            return False, []
-        for elem in response:
-            if elem.get("symbol") and elem.get("id") and elem.get("current_price"):
-                lines.append(
-                    f'{elem["symbol"].upper()},{elem["id"].lower()},{elem["current_price"]}\n')
-    return True, lines
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/json'
+    }
+    try:
+        url = 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=1'
+        resp = requests.get(url, headers=headers, timeout=10)
+        if resp.status_code == 200:
+            data = resp.json()
+            if isinstance(data, list):
+                for elem in data:
+                    if isinstance(elem, dict) and elem.get("symbol") and elem.get("id") and elem.get("current_price") is not None:
+                        lines.append(
+                            f'{elem["symbol"].upper()},{elem["id"].lower()},{elem["current_price"]},{(elem.get("name") or "").strip()}\n')
+                if lines:
+                    return True, lines
+        print(f"Warning: CoinGecko returned status {resp.status_code}")
+        return False, []
+    except Exception as e:
+        print(f"Error fetching crypto data from CoinGecko: {e}")
+        return False, []
 
 def fetch_fiat_data():
     """Fetches fiat data from Frankfurter."""

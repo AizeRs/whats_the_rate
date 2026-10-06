@@ -9,17 +9,19 @@ def update_crypto_db():
     if not success:
         return False
     try:
-        session = create_session()
-        for line in data:
-            if not line.strip():
-                continue
-            symbol, coin_id, price = line.strip().split(',')
-            crypto = session.query(CryptoRate).filter(CryptoRate.coin_id == coin_id).first()
-            if not crypto:
-                crypto = CryptoRate(symbol=symbol, coin_id=coin_id)
-                session.add(crypto)
-            crypto.price = float(price) if price else None
-        session.commit()
+        with create_session() as session:
+            for line in data:
+                if not line.strip():
+                    continue
+                # Name goes last: it may contain commas
+                symbol, coin_id, price, name = line.strip().split(',', 3)
+                crypto = session.query(CryptoRate).filter(CryptoRate.coin_id == coin_id).first()
+                if not crypto:
+                    crypto = CryptoRate(symbol=symbol, coin_id=coin_id)
+                    session.add(crypto)
+                crypto.price = float(price) if price else None
+                crypto.name = name or None
+            session.commit()
         return True
     except Exception as e:
         print(f"Error writing crypto to db: {e}")
@@ -99,18 +101,37 @@ def get_stocks_by_letter(letter):
     return stocks
 
 def get_crypto_by_letter(letter):
-    """Returns a list of cryptos starting with a given letter."""
+    """Returns a list of cryptos starting with a given letter, matching search query, or top-50 (#)."""
     cryptos = []
     try:
         session = create_session()
-        flag = letter.isupper()
-        if flag:
-            results = session.query(CryptoRate).filter(CryptoRate.symbol.startswith(letter)).all()
+        query = str(letter).strip()
+        if query in ('#', 'top', 'TOP', '%23'):
+            results = session.query(CryptoRate).order_by(CryptoRate.id.asc()).limit(50).all()
+        elif len(query) == 1:
+            from sqlalchemy import or_
+            q_lower = query.lower()
+            q_upper = query.upper()
+            results = session.query(CryptoRate).filter(
+                or_(
+                    CryptoRate.coin_id.startswith(q_lower),
+                    CryptoRate.symbol.startswith(q_upper)
+                )
+            ).all()
         else:
-            results = session.query(CryptoRate).filter(CryptoRate.coin_id.startswith(letter)).all()
+            from sqlalchemy import or_
+            pattern = f"%{query}%"
+            results = session.query(CryptoRate).filter(
+                or_(
+                    CryptoRate.symbol.ilike(pattern),
+                    CryptoRate.coin_id.ilike(pattern),
+                    CryptoRate.name.ilike(pattern)
+                )
+            ).all()
             
         for r in results:
-            cryptos.append({'symbol': r.symbol, 'name': r.coin_id, 'price': str(r.price) if r.price is not None else "No price data"})
+            cryptos.append({'symbol': r.symbol, 'name': r.coin_id, 'title': r.name,
+                            'price': str(r.price) if r.price is not None else "No price data"})
     except Exception as e:
         print(e)
     return cryptos

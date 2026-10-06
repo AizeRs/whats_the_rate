@@ -1,46 +1,456 @@
-<!DOCTYPE html>
-
-<html lang="en">
 {% extends "base.html" %}
+
+{% block title %}{% if is_search %}Поиск: {{ search_query }}{% elif is_top or letter == '#' %}Топ-50 криптовалют{% else %}Доступные криптовалюты ({{ letter }}){% endif %} · What's the rate{% endblock %}
+
 {% block content %}
-<head>
-    <meta charset="UTF-8">
-    <title>{{ letter }} · Доступные криптовалюты · What's the rate </title>
-</head>
-<a class="btn btn-dark" href="{{ url_for('market.crypto') }}" role="button">Вернуться к поиску</a>
+{% set show_portfolio = has_portfolio %}
+{% set grid_cols = 'sm:grid-cols-[40px_minmax(0,1fr)_170px_340px]' if show_portfolio else 'sm:grid-cols-[40px_minmax(0,1fr)_200px]' %}
+{% set chip_base = 'alpha-chip min-w-[36px] h-9 px-2 rounded-lg font-label-ticker text-[13px] font-medium flex items-center justify-center shrink-0 transition-colors border' %}
+{% set chip_on = 'bg-blue-600 border-blue-600 text-white' %}
+{% set chip_off = 'bg-transparent border-outline-variant/50 text-on-surface-variant hover:text-on-surface hover:border-outline' %}
 
-<body>
-<h1>Список доступных криптовалют ({{ letter }})</h1>
-<ul class="list-group list-group gap-3">
-    {% if crypto %}
-    {% for pair in crypto %}
-    <form action="" method="post">
-        <ul class="list-group list-group-horizontal">
-            <li class="list-group-item">{{ pair['symbol'] }}</li>
-            <li class="list-group-item">{{ pair['name'] }}</li>
-            <li class="list-group-item">{{ pair['price'] }}</li>
-            {% if current_user.is_authenticated == True and current_user.portfolio_id != None %}
-            <li class="list-group-item">
-                {% if success == pair['symbol'] + "_a" %}
-                <input class="btn btn-success btn-sm" type="submit" value="Добавить {{ pair['symbol'] }} в портфель"
-                       name="add_crypto"/>
-                {% elif danger == pair['symbol'] + "_a" %}
-                <input class="btn btn-danger btn-sm" type="submit" value="Добавить {{ pair['symbol'] }} в портфель"
-                       name="add_crypto"/>
-                {% else %}
-                <input class="btn btn-secondary btn-sm" type="submit" value="Добавить {{ pair['symbol'] }} в портфель"
-                       name="add_crypto"/>
+<div class="flex flex-col w-full py-space-xl">
+    <div class="max-w-[1080px] w-full mx-auto flex flex-col gap-5">
+
+        <!-- Title bar -->
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-space-md" id="top">
+            <div>
+                <h1 class="text-2xl sm:text-3xl font-bold text-on-surface tracking-tight">Криптовалюты</h1>
+                <p class="font-body-md text-body-md text-on-surface-variant mt-1">
+                    Справочник цифровых активов с актуальными рыночными котировками
+                </p>
+            </div>
+
+            <div class="flex items-center gap-3 flex-wrap self-start sm:self-auto shrink-0">
+                {% if updated_at %}
+                <span class="text-[13px] text-outline">Обновлено в <span class="font-label-ticker text-on-surface-variant">{{ updated_at }}</span></span>
                 {% endif %}
-            </li>
-            {% endif %}
-        </ul>
-    </form>
-    {% endfor %}
-    {% else %}
-    <div style="text-align: center;"><h3>Ничего не найдено</h3></div>
-    {% endif %}
-</ul>
-</body>
+                <form id="reloadCryptoForm" action="" method="post" onsubmit="handleReloadQuotes(event)">
+                    <button
+                        type="submit"
+                        id="reloadCryptoBtn"
+                        name="reload_crypto"
+                        value="1"
+                        class="inline-flex items-center gap-2 h-10 px-3.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface text-sm font-medium border border-outline-variant/50 hover:border-outline transition-colors cursor-pointer whitespace-nowrap"
+                        title="Синхронизировать котировки с сервером"
+                    >
+                        <span class="material-symbols-outlined text-[18px] transition-transform duration-500" id="reloadCryptoIcon">sync</span>
+                        <span id="reloadCryptoText">Обновить курсы</span>
+                    </button>
+                </form>
+            </div>
+        </div>
 
+        <!-- Reload feedback -->
+        {% if reload == 1 %}
+        <div class="px-4 py-3 rounded-lg bg-tertiary-container/15 text-tertiary text-sm flex items-center gap-2 border border-tertiary/30">
+            <span class="material-symbols-outlined text-[18px]">check_circle</span>
+            <span>Список криптовалют и котировки успешно обновлены.</span>
+        </div>
+        {% elif reload == 2 %}
+        <div class="px-4 py-3 rounded-lg bg-error-container/20 text-error text-sm flex items-center gap-2 border border-error/30">
+            <span class="material-symbols-outlined text-[18px]">error</span>
+            <span>Ошибка при обращении к API CoinGecko (лимит запросов). Попробуйте через минуту.</span>
+        </div>
+        {% endif %}
+
+        <!-- Search + first-symbol filter (one compact panel) -->
+        <section aria-label="Поиск и фильтр" class="bg-surface-container rounded-xl p-4 border border-outline-variant/30 flex flex-col gap-3.5">
+            <form
+                action=""
+                method="post"
+                class="flex flex-col sm:flex-row gap-2.5"
+                onsubmit="event.preventDefault(); const val = document.getElementById('cryptoSearch').value.trim(); if(val) { window.location.href = '{{ url_for('market.crypto') }}/' + encodeURIComponent(val); } else { window.location.href = '{{ url_for('market.crypto') }}'; }"
+            >
+                <label for="cryptoSearch" class="sr-only">Поиск по названию или тикеру</label>
+                <div class="relative flex-1">
+                    <span class="material-symbols-outlined text-[20px] text-outline absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none">search</span>
+                    <input
+                        type="search"
+                        id="cryptoSearch"
+                        value="{{ search_query }}"
+                        autocomplete="off"
+                        placeholder="Название или тикер — например, BTC, Bitcoin, Solana"
+                        class="w-full h-12 pl-11 pr-11 rounded-lg bg-surface-container-lowest text-on-surface placeholder-outline font-body-md text-body-md border border-outline-variant/50 focus:outline-none focus:border-blue-500 focus:ring-[3px] focus:ring-blue-500/20 transition-all [&::-webkit-search-cancel-button]:hidden"
+                    >
+                    <button
+                        type="button"
+                        id="clearSearch"
+                        onclick="const i = document.getElementById('cryptoSearch'); i.value = ''; i.focus(); this.classList.add('hidden');"
+                        class="{% if not search_query %}hidden {% endif %}absolute right-1.5 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center text-outline hover:text-on-surface rounded-lg transition-colors"
+                        aria-label="Очистить поиск"
+                    >
+                        <span class="material-symbols-outlined text-[18px]">close</span>
+                    </button>
+                </div>
+                <button
+                    type="submit"
+                    class="h-12 px-6 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-[15px] transition-colors flex items-center justify-center cursor-pointer"
+                >
+                    Найти
+                </button>
+            </form>
+
+            {% set alphabet_chars = 'abcdefghijklmnopqrstuvwxyz' %}
+            {% set number_chars = '0123456789' %}
+            <nav aria-label="Фильтр по первому символу" class="flex flex-wrap items-center gap-1.5" id="alphaGroup">
+                <span class="text-[13px] text-outline mr-1.5">Первый символ</span>
+                <a
+                    href="{{ url_for('market.crypto') }}"
+                    class="{{ chip_base }} px-3 font-body-md {{ chip_on if (letter == '#' and not is_search) else chip_off }}"
+                    {% if letter == '#' and not is_search %}aria-current="page"{% endif %}
+                    title="Топ-50 по капитализации"
+                >Топ-50</a>
+                {% for char in alphabet_chars %}
+                {% set on = (not is_search and letter|lower == char) %}
+                <a
+                    href="{{ url_for('market.available_crypto_for_letter', letter=char) }}"
+                    class="{{ chip_base }} {{ chip_on if on else chip_off }}"
+                    {% if on %}aria-current="page"{% endif %}
+                >{{ char|upper }}</a>
+                {% endfor %}
+                <span aria-hidden="true" class="w-px h-5 bg-outline-variant/60 mx-1.5"></span>
+                {% for num in number_chars %}
+                {% set on = (not is_search and letter|lower == num) %}
+                <a
+                    href="{{ url_for('market.available_crypto_for_letter', letter=num) }}"
+                    class="{{ chip_base }} {{ chip_on if on else chip_off }}"
+                    {% if on %}aria-current="page"{% endif %}
+                >{{ num }}</a>
+                {% endfor %}
+            </nav>
+        </section>
+
+        <!-- List -->
+        <section aria-label="Список криптовалют" class="bg-surface-container rounded-xl overflow-hidden border border-outline-variant/30">
+            <div class="px-5 py-4">
+                <h2 class="text-[17px] font-semibold text-on-surface">
+                    {% if is_search %}
+                    Результаты поиска «{{ search_query }}»
+                    {% elif is_top or letter == '#' %}
+                    Топ-50 по капитализации
+                    {% else %}
+                    Начинаются на «{{ letter }}»
+                    {% endif %}
+                </h2>
+                <p class="text-[13px] text-outline mt-0.5">
+                    {% if is_search %}Найдено активов{% else %}Показано активов{% endif %}:
+                    <span class="font-label-ticker text-on-surface-variant">{{ crypto|length }}</span>
+                </p>
+            </div>
+
+            {% if not current_user.is_authenticated %}
+            <div class="mx-5 mb-4 pl-4 pr-3 py-3 flex items-center justify-between gap-3 flex-wrap rounded-lg bg-blue-500/10 border border-blue-400/25">
+                <span class="text-sm text-on-surface-variant">Войдите, чтобы добавлять активы в портфель и следить за их стоимостью</span>
+                <a href="{{ url_for('auth.login') }}" class="h-9 px-3.5 inline-flex items-center rounded-lg border border-blue-400/50 text-primary text-sm font-semibold hover:bg-blue-500/10 transition-colors">Войти</a>
+            </div>
+            {% endif %}
+
+            {% if crypto %}
+            <!-- Table header -->
+            <div class="hidden sm:grid {{ grid_cols }} gap-4 items-center px-5 py-2.5 border-t border-outline-variant/30 bg-surface-container-low text-xs font-medium text-outline">
+                <span>#</span>
+                <span>Актив</span>
+                <span class="text-right">Курс, {{ currency_code }}</span>
+                {% if show_portfolio %}<span class="text-right">Портфель</span>{% endif %}
+            </div>
+
+            <!-- Rows -->
+            <div class="flex flex-col">
+                {% for pair in crypto %}
+                <div class="grid grid-cols-[minmax(0,1fr)_auto] {{ grid_cols }} gap-x-4 gap-y-2 items-center px-5 py-3 sm:py-0 sm:min-h-[68px] border-t border-outline-variant/20 hover:bg-surface-container-high/60 transition-colors" data-ticker="{{ pair['symbol'] }}" data-name="{{ pair['name'] }}">
+                    <!-- Rank -->
+                    <span class="hidden sm:block font-label-ticker text-[13px] text-outline">{{ pair['rank'] }}</span>
+
+                    <!-- Asset -->
+                    <div class="flex items-center gap-3 min-w-0">
+                        <span aria-hidden="true" class="w-9 h-9 rounded-full flex items-center justify-center shrink-0 font-bold text-[15px]"
+                              style="color: hsl({{ pair['hue'] }} 85% 72%); background: hsl({{ pair['hue'] }} 70% 55% / 0.14);">{{ pair['symbol'][:1]|upper }}</span>
+                        <div class="flex flex-col min-w-0">
+                            <div class="flex items-baseline gap-2 min-w-0">
+                                <span class="text-[15px] text-on-surface font-semibold truncate">{{ pair['title'] }}</span>
+                                <span class="font-label-ticker text-[13px] text-on-surface-variant/80 font-medium shrink-0">{{ pair['symbol'] }}</span>
+                            </div>
+                            <span class="font-label-ticker text-xs text-outline truncate">{{ pair['name'] }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Price -->
+                    <span class="font-label-numeric-md text-[15px] text-on-surface font-semibold text-right tabular-nums whitespace-nowrap">{{ pair['price'] }}</span>
+
+                    <!-- Portfolio -->
+                    {% if show_portfolio %}
+                    <div class="portfolio-action-container col-span-2 sm:col-span-1 flex items-center justify-end gap-2"
+                         data-ticker="{{ pair['symbol'] }}"
+                         data-price="{{ pair['price_num'] }}"
+                         data-held="{{ pair['held'] }}">
+
+                        <!-- 1. Input mode -->
+                        <div class="input-mode hidden items-center gap-2">
+                            <span class="estimate font-label-ticker text-xs text-outline whitespace-nowrap">≈ —</span>
+                            <div class="flex items-center h-9 w-[136px] rounded-lg bg-surface-container-lowest border border-blue-500 focus-within:ring-[3px] focus-within:ring-blue-500/25 transition-shadow">
+                                <input
+                                    type="text"
+                                    inputmode="decimal"
+                                    placeholder="0,00"
+                                    autocomplete="off"
+                                    aria-label="Количество {{ pair['symbol'] }}"
+                                    class="quantity-input flex-1 min-w-0 h-full pl-2.5 pr-1.5 bg-transparent text-on-surface font-label-ticker text-sm text-right focus:outline-none"
+                                    oninput="updateEstimate(this)"
+                                    onkeydown="handleInputKey(event, this)"
+                                />
+                                <span class="pr-2.5 font-label-ticker text-xs text-outline">{{ pair['symbol'] }}</span>
+                            </div>
+                            <button
+                                type="button"
+                                onclick="confirmAdd(this)"
+                                class="confirm-btn h-9 w-9 rounded-lg bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                                aria-label="Сохранить количество"
+                            >
+                                <span class="material-symbols-outlined text-[18px] leading-none">check</span>
+                            </button>
+                            <button
+                                type="button"
+                                onclick="toggleAddMode(this, false)"
+                                class="cancel-btn h-9 w-9 rounded-lg border border-outline-variant/50 text-outline hover:text-on-surface hover:bg-surface-container-high flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                                aria-label="Отмена"
+                            >
+                                <span class="material-symbols-outlined text-[16px] leading-none">close</span>
+                            </button>
+                        </div>
+
+                        <!-- 2. Add button -->
+                        <button
+                            type="button"
+                            onclick="toggleAddMode(this, true, 'add')"
+                            class="default-mode {% if pair['held'] %}hidden{% else %}flex{% endif %} h-9 px-3 rounded-lg bg-transparent hover:bg-surface-container-high border border-outline-variant/50 hover:border-outline text-on-surface text-sm font-medium transition-colors items-center gap-1.5 cursor-pointer"
+                            title="Добавить {{ pair['symbol'] }} в портфель"
+                        >
+                            <span class="material-symbols-outlined text-[17px]">add</span>
+                            <span>В портфель</span>
+                        </button>
+
+                        <!-- 3. Held: quantity + edit -->
+                        <div class="held-mode {% if pair['held'] %}flex{% else %}hidden{% endif %} items-center gap-2">
+                            <span class="h-8 px-3 flex items-center gap-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[13px] font-medium whitespace-nowrap">
+                                <span class="material-symbols-outlined text-[16px]">check</span>
+                                <span class="font-label-ticker"><span class="held-qty">{{ pair['held_str'] }}</span> {{ pair['symbol'] }}</span>
+                            </span>
+                            <button
+                                type="button"
+                                onclick="toggleAddMode(this, true, 'set')"
+                                class="h-9 w-9 rounded-lg border border-outline-variant/50 text-outline hover:text-on-surface hover:bg-surface-container-high flex items-center justify-center transition-colors cursor-pointer"
+                                aria-label="Изменить количество {{ pair['symbol'] }}"
+                            >
+                                <span class="material-symbols-outlined text-[17px]">edit</span>
+                            </button>
+                        </div>
+
+                        <!-- 4. Error -->
+                        <span class="error-badge hidden items-center gap-1.5 h-8 px-3 rounded-lg bg-error-container/20 text-error text-[13px] font-medium border border-error/30">
+                            <span class="material-symbols-outlined text-[16px]">error</span>
+                            <span>Ошибка</span>
+                        </span>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="py-14 px-5 border-t border-outline-variant/20 text-center flex flex-col items-center gap-2.5">
+                <span class="material-symbols-outlined text-outline text-[40px]">search_off</span>
+                <h3 class="text-on-surface font-semibold text-base">Ничего не найдено</h3>
+                <p class="text-outline text-sm">
+                    {% if is_search %}
+                    По запросу «{{ search_query }}» цифровых активов не обнаружено
+                    {% else %}
+                    На «{{ letter }}» цифровых активов не обнаружено
+                    {% endif %}
+                </p>
+                <a href="{{ url_for('market.crypto') }}" class="mt-1 h-9 px-3.5 inline-flex items-center rounded-lg border border-outline-variant/50 hover:border-outline hover:bg-surface-container-high text-on-surface text-sm font-medium transition-colors">Показать топ-50</a>
+            </div>
+            {% endif %}
+        </section>
+
+    </div>
+</div>
+
+<script>
+const CURRENCY_SIGN = {{ currency_sign|tojson }};
+
+function parseQty(raw) {
+    const v = parseFloat(String(raw).replace(/\s/g, '').replace(',', '.'));
+    return isNaN(v) ? null : v;
+}
+
+function fmtMoney(v) {
+    const digits = Math.abs(v) >= 1 || v === 0 ? 2 : 6;
+    return new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: digits }).format(v) + ' ' + CURRENCY_SIGN;
+}
+
+function fmtQty(v) {
+    return new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 8 }).format(v);
+}
+
+function showEl(el, show) {
+    if (!el) return;
+    el.classList.toggle('hidden', !show);
+    el.classList.toggle('flex', show);
+}
+
+function updateEstimate(input) {
+    const container = input.closest('.portfolio-action-container');
+    const est = container.querySelector('.estimate');
+    const qty = parseQty(input.value);
+    const price = parseFloat(container.dataset.price);
+    est.textContent = (qty && qty > 0 && !isNaN(price)) ? '≈ ' + fmtMoney(qty * price) : '≈ —';
+}
+
+async function handleReloadQuotes(e) {
+    e.preventDefault();
+    const btn = document.getElementById('reloadCryptoBtn');
+    const icon = document.getElementById('reloadCryptoIcon');
+    const text = document.getElementById('reloadCryptoText');
+
+    if (btn.disabled) return;
+    btn.disabled = true;
+    btn.classList.add('opacity-80', 'cursor-wait');
+    icon.classList.add('animate-spin');
+    text.textContent = 'Обновление...';
+
+    try {
+        const response = await fetch(window.location.pathname, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            body: JSON.stringify({ reload_crypto: 1 })
+        });
+        const data = await response.json();
+
+        icon.classList.remove('animate-spin');
+        if (data.success) {
+            icon.textContent = 'check';
+            icon.classList.add('text-tertiary');
+            text.textContent = 'Обновлено!';
+            setTimeout(() => { window.location.href = window.location.pathname + '?reload=1'; }, 600);
+        } else {
+            icon.textContent = 'error';
+            icon.classList.add('text-error');
+            text.textContent = 'Лимит API';
+            setTimeout(() => {
+                icon.textContent = 'sync';
+                icon.classList.remove('text-error');
+                text.textContent = 'Обновить курсы';
+                btn.disabled = false;
+                btn.classList.remove('opacity-80', 'cursor-wait');
+            }, 3000);
+        }
+    } catch (err) {
+        console.error('Error reloading crypto:', err);
+        document.getElementById('reloadCryptoForm').submit();
+    }
+}
+
+function restoreIdle(container) {
+    const held = parseFloat(container.dataset.held) || 0;
+    showEl(container.querySelector('.input-mode'), false);
+    showEl(container.querySelector('.error-badge'), false);
+    showEl(container.querySelector('.default-mode'), held <= 0);
+    showEl(container.querySelector('.held-mode'), held > 0);
+}
+
+function toggleAddMode(triggerEl, showInput, mode) {
+    const container = triggerEl.closest('.portfolio-action-container');
+    if (!container) return;
+
+    if (!showInput) {
+        restoreIdle(container);
+        return;
+    }
+
+    // Close any other open editor on the page
+    document.querySelectorAll('.portfolio-action-container').forEach(c => {
+        if (c !== container && !c.querySelector('.input-mode').classList.contains('hidden')) restoreIdle(c);
+    });
+
+    container.dataset.mode = mode || 'add';
+    showEl(container.querySelector('.default-mode'), false);
+    showEl(container.querySelector('.held-mode'), false);
+    showEl(container.querySelector('.input-mode'), true);
+
+    const input = container.querySelector('.quantity-input');
+    const held = parseFloat(container.dataset.held) || 0;
+    input.value = (container.dataset.mode === 'set' && held > 0) ? String(held).replace('.', ',') : '';
+    updateEstimate(input);
+    input.focus();
+    input.select();
+}
+
+function handleInputKey(event, inputEl) {
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        confirmAdd(inputEl);
+    } else if (event.key === 'Escape') {
+        event.preventDefault();
+        toggleAddMode(inputEl, false);
+    }
+}
+
+async function confirmAdd(el) {
+    const container = el.closest('.portfolio-action-container');
+    if (!container) return;
+    const symbol = container.dataset.ticker;
+    const mode = container.dataset.mode || 'add';
+    const input = container.querySelector('.quantity-input');
+    const confirmBtn = container.querySelector('.confirm-btn');
+    const cancelBtn = container.querySelector('.cancel-btn');
+
+    let qty = parseQty(input.value);
+    if (mode === 'add') {
+        if (qty === null || qty <= 0) qty = 1;
+    } else if (qty === null || qty < 0) {
+        input.focus();
+        return;
+    }
+
+    confirmBtn.disabled = true;
+    cancelBtn.disabled = true;
+    confirmBtn.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin leading-none">progress_activity</span>';
+
+    const body = mode === 'set' ? { set_crypto: symbol, quantity: qty } : { add_crypto: symbol, quantity: qty };
+    const resetBtn = () => {
+        confirmBtn.disabled = false;
+        cancelBtn.disabled = false;
+        confirmBtn.innerHTML = '<span class="material-symbols-outlined text-[18px] leading-none">check</span>';
+    };
+
+    try {
+        const response = await fetch(window.location.pathname, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            body: JSON.stringify(body)
+        });
+        const data = await response.json();
+        resetBtn();
+
+        if (data.success) {
+            const total = parseFloat(data.quantity) || 0;
+            container.dataset.held = total;
+            container.querySelector('.held-qty').textContent = data.quantity_str || fmtQty(total);
+            restoreIdle(container);
+        } else {
+            showEl(container.querySelector('.input-mode'), false);
+            showEl(container.querySelector('.error-badge'), true);
+            setTimeout(() => restoreIdle(container), 2500);
+        }
+    } catch (err) {
+        console.error('Error updating portfolio:', err);
+        resetBtn();
+    }
+}
+
+// Show the clear (×) button only when the search field has text
+document.getElementById('cryptoSearch').addEventListener('input', function () {
+    document.getElementById('clearSearch').classList.toggle('hidden', !this.value);
+});
+</script>
 {% endblock %}
-</html>

@@ -17,6 +17,7 @@ class CryptoRate(SqlAlchemyBase):
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
     symbol = sqlalchemy.Column(sqlalchemy.String, index=True)
     coin_id = sqlalchemy.Column(sqlalchemy.String, unique=True)
+    name = sqlalchemy.Column(sqlalchemy.String, nullable=True)  
     price = sqlalchemy.Column(sqlalchemy.Float, nullable=True)
 
 class FiatRate(SqlAlchemyBase):
