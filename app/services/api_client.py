@@ -12,6 +12,32 @@ def ticker_price(ticker):
         print(f"Error fetching ticker price for {ticker}: {e}")
         return None
 
+def fetch_quote(ticker):
+    """Fetches a stock quote from Finnhub.
+
+    Returns (status, quote): status is 'ok', 'limit' (rate limit hit), 'no_data' (unknown ticker
+    or no trades) or 'error'; quote is Finnhub's dict ({'c': price, 'dp': change %, ...}) when 'ok'.
+    """
+    try:
+        resp = requests.get('https://finnhub.io/api/v1/quote',
+                            params={'symbol': ticker, 'token': FINNHUB_APIKEY}, timeout=10)
+    except Exception as e:
+        print(f"Error fetching quote for {ticker}: {e}")
+        return 'error', None
+    if resp.status_code == 429:
+        return 'limit', None
+    try:
+        data = resp.json()
+    except ValueError:
+        return 'error', None
+    if resp.status_code != 200 or not isinstance(data, dict):
+        if isinstance(data, dict) and 'limit' in str(data.get('error', '')).lower():
+            return 'limit', None
+        return 'error', None
+    if data.get('c'):
+        return 'ok', data
+    return 'no_data', None
+
 def fetch_crypto_data():
     """Fetches top crypto data from CoinGecko with error handling and rate-limit safety."""
     lines = []
@@ -51,5 +77,7 @@ def fetch_tickers_data():
     """Fetches list of all US tickers from Finnhub."""
     api_url = f'https://finnhub.io/api/v1/stock/symbol?exchange=US&token={FINNHUB_APIKEY}'
     response = requests.get(api_url).json()
-    my_list = [[item.get('symbol', ''), item.get('description', '').replace(',', '')] for item in response if item.get('symbol')]
+    my_list = [[item.get('symbol', ''), item.get('description', '').replace(',', ''),
+                item.get('type') or None, item.get('mic') or None]
+               for item in response if item.get('symbol')]
     return my_list

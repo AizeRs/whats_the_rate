@@ -23,7 +23,7 @@
 
             <div class="flex items-center gap-3 flex-wrap self-start sm:self-auto shrink-0">
                 {% if updated_at %}
-                <span class="text-[13px] text-outline">Обновлено в <span class="font-label-ticker text-on-surface-variant">{{ updated_at }}</span></span>
+                <span class="text-[13px] text-outline">Обновлено <span class="font-label-ticker text-on-surface-variant">{{ updated_at }}</span></span>
                 {% endif %}
                 <form id="reloadCryptoForm" action="" method="post" onsubmit="handleReloadQuotes(event)">
                     <button
@@ -306,8 +306,9 @@ function updateEstimate(input) {
     est.textContent = (qty && qty > 0 && !isNaN(price)) ? '≈ ' + fmtMoney(qty * price) : '≈ —';
 }
 
-async function handleReloadQuotes(e) {
-    e.preventDefault();
+// auto = true: quotes are older than 5 minutes, reload them silently right after the page opens
+async function handleReloadQuotes(e, auto) {
+    if (e) e.preventDefault();
     const btn = document.getElementById('reloadCryptoBtn');
     const icon = document.getElementById('reloadCryptoIcon');
     const text = document.getElementById('reloadCryptoText');
@@ -327,6 +328,15 @@ async function handleReloadQuotes(e) {
         const data = await response.json();
 
         icon.classList.remove('animate-spin');
+        if (auto) {
+            if (data.success) window.location.href = window.location.pathname;
+            else {
+                text.textContent = 'Обновить курсы';
+                btn.disabled = false;
+                btn.classList.remove('opacity-80', 'cursor-wait');
+            }
+            return;
+        }
         if (data.success) {
             icon.textContent = 'check';
             icon.classList.add('text-tertiary');
@@ -346,9 +356,13 @@ async function handleReloadQuotes(e) {
         }
     } catch (err) {
         console.error('Error reloading crypto:', err);
-        document.getElementById('reloadCryptoForm').submit();
+        if (!auto) document.getElementById('reloadCryptoForm').submit();
     }
 }
+
+{% if auto_refresh %}
+handleReloadQuotes(null, true);
+{% endif %}
 
 function restoreIdle(container) {
     const held = parseFloat(container.dataset.held) || 0;

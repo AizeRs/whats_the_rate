@@ -1,0 +1,40 @@
+{# Shared pieces of the stocks pages. Also rendered from market_routes for AJAX price refreshes. #}
+
+{% macro price_cell(row) -%}
+{% if row.price_str %}
+<span class="font-label-numeric-md text-[15px] font-semibold tabular-nums whitespace-nowrap {{ 'text-on-surface' if row.age.fresh else 'text-on-surface-variant' }}" title="{{ row.age.title }}">{{ row.price_str }}</span>
+{% if row.age.fresh %}
+<span class="font-label-ticker text-xs whitespace-nowrap">
+    {% if row.change_str %}<span class="{{ 'text-tertiary' if row.change_up else 'text-error' }}">{{ row.change_str }}</span><span class="text-outline"> · </span>{% endif %}<span class="text-outline">{{ row.age.label }}</span>
+</span>
+{% else %}
+<span class="flex items-center gap-1 text-xs whitespace-nowrap {{ 'text-amber-300' if row.age.very_stale else 'text-outline' }}" title="{{ row.age.title }}">
+    <span class="material-symbols-outlined text-[14px]">schedule</span>{{ row.age.label or 'время обновления неизвестно' }}
+</span>
+{% endif %}
+{% else %}
+<span class="text-sm text-outline">Нет данных</span>
+<span class="text-xs text-outline/80">нажмите ⟳</span>
+{% endif %}
+{%- endmacro %}
+
+{% macro value_cell(row) -%}
+{% if row.value_str %}
+<span class="font-label-numeric-md text-[15px] font-semibold tabular-nums whitespace-nowrap {{ 'text-on-surface' if row.age.fresh else 'text-on-surface-variant' }}">{{ row.value_str }}</span>
+{% else %}
+<span class="text-sm text-outline">—</span>
+{% endif %}
+{%- endmacro %}
+
+{% macro monogram(row) -%}
+<span aria-hidden="true" class="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0 font-label-ticker font-bold text-xs"
+      style="color: hsl({{ row.hue }} 85% 74%); background: hsl({{ row.hue }} 70% 55% / 0.14);">{{ row.ticker[:4] }}</span>
+{%- endmacro %}
+
+{% macro refresh_button(row, auto=False) -%}
+<button type="button" onclick="refreshPrice(this)" data-ticker="{{ row.ticker }}"{% if auto and row.needs_refresh %} data-auto-refresh="1"{% endif %}
+        class="refresh-btn h-9 w-9 rounded-lg border border-outline-variant/50 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high flex items-center justify-center transition-colors cursor-pointer disabled:cursor-wait"
+        aria-label="Обновить цену {{ row.ticker }}" title="Обновить цену">
+    <span class="material-symbols-outlined text-[18px]">sync</span>
+</button>
+{%- endmacro %}

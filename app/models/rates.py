@@ -8,7 +8,11 @@ class StockRate(SqlAlchemyBase):
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
     ticker = sqlalchemy.Column(sqlalchemy.String, unique=True, index=True)
     name = sqlalchemy.Column(sqlalchemy.String)
+    type = sqlalchemy.Column(sqlalchemy.String, nullable=True)  # Finnhub security type: "Common Stock", "ETP", "ADR"...
+    mic = sqlalchemy.Column(sqlalchemy.String, nullable=True)  # Exchange code: XNAS, XNYS, ..., OOTC = over-the-counter
     price = sqlalchemy.Column(sqlalchemy.Float, nullable=True)
+    change_pct = sqlalchemy.Column(sqlalchemy.Float, nullable=True)  # Daily change, % (Finnhub "dp")
+    price_updated_at = sqlalchemy.Column(sqlalchemy.DateTime, nullable=True)  # When WE saved the price
 
 class CryptoRate(SqlAlchemyBase):
     """Stores the current rate for a cryptocurrency."""
@@ -19,6 +23,7 @@ class CryptoRate(SqlAlchemyBase):
     coin_id = sqlalchemy.Column(sqlalchemy.String, unique=True)
     name = sqlalchemy.Column(sqlalchemy.String, nullable=True)  
     price = sqlalchemy.Column(sqlalchemy.Float, nullable=True)
+    price_updated_at = sqlalchemy.Column(sqlalchemy.DateTime, nullable=True)  # When the quotes were last loaded
 
 class FiatRate(SqlAlchemyBase):
     """Stores the current rate for a fiat currency."""

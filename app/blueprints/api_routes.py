@@ -83,7 +83,7 @@ def reload_portfolio():
     for ticker in data['stocks'].keys():
         price_data = ticker_price(ticker)
         if price_data and price_data[0]:
-            save_ticker_price(ticker, price_data[0])
+            save_ticker_price(ticker, price_data[0], price_data[1].get('dp'))
         else:
             return jsonify({'Error': 'Stocks API limit exceeded'})
             

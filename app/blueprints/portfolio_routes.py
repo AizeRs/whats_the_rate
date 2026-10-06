@@ -44,7 +44,7 @@ def portfolios_username(username):
                     price = ticker_price(ticker)
                     if price and price[0]:
                         param['success_btn'] = 'reload'
-                        save_ticker_price(ticker, price[0])
+                        save_ticker_price(ticker, price[0], price[1].get('dp'))
                     else:
                         param['danger_btn'] = 'reload'
                 if data['crypto']:

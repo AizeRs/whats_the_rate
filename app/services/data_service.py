@@ -1,4 +1,6 @@
 import os
+from datetime import datetime
+from sqlalchemy import or_, func, case
 from app.models.db_session import create_session
 from app.models.rates import StockRate, CryptoRate, FiatRate
 from .api_client import fetch_crypto_data, fetch_fiat_data, fetch_tickers_data
@@ -9,6 +11,7 @@ def update_crypto_db():
     if not success:
         return False
     try:
+        now = datetime.now()
         with create_session() as session:
             for line in data:
                 if not line.strip():
@@ -21,6 +24,7 @@ def update_crypto_db():
                     session.add(crypto)
                 crypto.price = float(price) if price else None
                 crypto.name = name or None
+                crypto.price_updated_at = now
             session.commit()
         return True
     except Exception as e:
@@ -62,25 +66,30 @@ def update_tickers_db():
         
     try:
         session = create_session()
-        for row in my_list:
-            ticker_symbol, description = row[0], row[1]
-            stock = session.query(StockRate).filter(StockRate.ticker == ticker_symbol).first()
+        existing = {s.ticker: s for s in session.query(StockRate).all()}
+        for ticker_symbol, description, stock_type, mic in my_list:
+            stock = existing.get(ticker_symbol)
             if not stock:
                 stock = StockRate(ticker=ticker_symbol, name=description)
                 session.add(stock)
+                existing[ticker_symbol] = stock
+            stock.type = stock_type
+            stock.mic = mic
         session.commit()
         return True
     except Exception as e:
         print(f"Error writing tickers to db: {e}")
         return False
 
-def save_ticker_price(ticker, price):
-    """Saves a new price for a specific stock ticker."""
+def save_ticker_price(ticker, price, change_pct=None):
+    """Saves a new price (and daily change, %) for a stock ticker and remembers when we saved it."""
     try:
         session = create_session()
         stock = session.query(StockRate).filter(StockRate.ticker == ticker).first()
         if stock:
             stock.price = price
+            stock.change_pct = change_pct
+            stock.price_updated_at = datetime.now()
             session.commit()
             return True
         return False
@@ -88,17 +97,62 @@ def save_ticker_price(ticker, price):
         print(f"Error saving ticker price to db: {e}")
         return False
 
-def get_stocks_by_letter(letter):
-    """Returns a list of stocks starting with a given letter."""
-    stocks = []
+def _stock_dict(r):
+    return {'ticker': r.ticker, 'name': r.name, 'type': r.type, 'mic': r.mic, 'price': r.price,
+            'change_pct': r.change_pct, 'updated_at': r.price_updated_at}
+
+
+def get_stocks_by_letter(query, page=1, per_page=50):
+    """Returns (stocks, has_next): one page of stocks — listed before OTC, priced first, then by ticker.
+
+    A single character filters by the first letter of the ticker; a longer query matches
+    the beginning of the ticker or any part of the company name.
+    """
+    stocks, has_next = [], False
     try:
         session = create_session()
-        results = session.query(StockRate).filter(StockRate.ticker.startswith(letter.upper())).all()
-        for r in results:
-            stocks.append({'ticker': r.ticker, 'stock': r.name, 'price': str(r.price) if r.price is not None else "No price data"})
+        query = str(query).strip()
+        if len(query) == 1:
+            q = session.query(StockRate).filter(StockRate.ticker.startswith(query.upper()))
+        else:
+            q = session.query(StockRate).filter(or_(
+                StockRate.ticker.startswith(query.upper()),
+                StockRate.name.ilike(f'%{query}%')
+            ))
+        # Finnhub gives no popularity data, so: exchange-listed first, then over-the-counter (OOTC),
+        # then tickers without an exchange (no longer in Finnhub's list, e.g. delisted);
+        # inside each group stocks with a known price first, then alphabetically
+        listing_rank = case((StockRate.mic.is_(None), 2), (StockRate.mic == 'OOTC', 1), else_=0)
+        results = q.order_by(listing_rank, StockRate.price.is_(None).asc(), StockRate.ticker.asc()) \
+            .offset((page - 1) * per_page).limit(per_page + 1).all()
+        has_next = len(results) > per_page
+        stocks = [_stock_dict(r) for r in results[:per_page]]
     except Exception as e:
         print(e)
-    return stocks
+    return stocks, has_next
+
+
+def get_stocks_by_tickers(tickers):
+    """Returns stocks for the given tickers, sorted by ticker."""
+    if not tickers:
+        return []
+    try:
+        session = create_session()
+        results = session.query(StockRate).filter(StockRate.ticker.in_(list(tickers))) \
+            .order_by(StockRate.ticker.asc()).all()
+        return [_stock_dict(r) for r in results]
+    except Exception as e:
+        print(e)
+        return []
+
+def get_crypto_updated_at():
+    """When the crypto quotes were last loaded (None if never)."""
+    try:
+        session = create_session()
+        return session.query(func.max(CryptoRate.price_updated_at)).scalar()
+    except Exception as e:
+        print(e)
+        return None
 
 def get_crypto_by_letter(letter):
     """Returns a list of cryptos starting with a given letter, matching search query, or top-50 (#)."""
@@ -109,7 +163,6 @@ def get_crypto_by_letter(letter):
         if query in ('#', 'top', 'TOP', '%23'):
             results = session.query(CryptoRate).order_by(CryptoRate.id.asc()).limit(50).all()
         elif len(query) == 1:
-            from sqlalchemy import or_
             q_lower = query.lower()
             q_upper = query.upper()
             results = session.query(CryptoRate).filter(
@@ -119,7 +172,6 @@ def get_crypto_by_letter(letter):
                 )
             ).all()
         else:
-            from sqlalchemy import or_
             pattern = f"%{query}%"
             results = session.query(CryptoRate).filter(
                 or_(
