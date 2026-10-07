@@ -1,0 +1,325 @@
+{% extends "base.html" %}
+
+{# Login and registration on one page. The forms slide sideways; the URL switches between /login and /register
+   without a reload. Each form still posts to its own route, so server-side validation works as before. #}
+
+{% block title %}{{ 'Регистрация' if mode == 'register' else 'Вход' }} · What's the rate{% endblock %}
+
+{% block content %}
+{% set field_base = 'w-full h-12 lg:h-11 pl-10 rounded-lg bg-surface-container-lowest text-on-surface text-base lg:text-[15px] border placeholder:text-outline/70 focus:outline-none focus:ring-[3px] transition-colors' %}
+{% set field_ok = 'border-outline-variant/60 focus:border-blue-500 focus:ring-blue-500/20' %}
+{% set field_err = 'border-error/60 focus:border-error focus:ring-error/20' %}
+
+{% macro errors(field) -%}
+{% for error in field.errors %}
+<span class="text-error text-[13px] flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">warning</span>{{ error }}</span>
+{% endfor %}
+{%- endmacro %}
+
+{% macro input(field, icon, type='text', placeholder='', autocomplete='', extra='', password=False) -%}
+<div class="relative flex items-center">
+    <span class="material-symbols-outlined text-outline absolute left-3 pointer-events-none text-[18px]">{{ icon }}</span>
+    <input type="{{ type }}" name="{{ field.name }}" id="{{ field.id }}"
+           {% if type != 'password' %}value="{{ field.data or '' }}"{% endif %}
+           placeholder="{{ placeholder }}" autocomplete="{{ autocomplete }}" {{ extra|safe }}
+           {% if field.errors %}aria-invalid="true"{% endif %}
+           class="{{ field_base }} {{ 'pr-11' if password else 'pr-3' }} {{ field_err if field.errors else field_ok }}">
+    {% if password %}
+    <button type="button" onclick="togglePassword(this)" aria-label="Показать пароль"
+            class="absolute right-1.5 w-9 h-9 rounded-md text-outline hover:text-on-surface flex items-center justify-center transition-colors">
+        <span class="material-symbols-outlined text-[19px]">visibility</span>
+    </button>
+    {% endif %}
+</div>
+{%- endmacro %}
+
+{% set is_reg = mode == 'register' %}
+{% set lf = login_form %}
+{% set rf = register_form %}
+
+<style>
+    body { overflow-x: clip; }
+    .auth-light {
+        background: radial-gradient(ellipse 70% 55% at 50% -8%, rgba(59,130,246,.20) 0%, rgba(59,130,246,.10) 30%, rgba(59,130,246,.035) 55%, rgba(59,130,246,0) 78%);
+    }
+    /* Fine grain on top of every gradient: dithers the colour steps away */
+    .auth-noise {
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .55 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+        opacity: .07;
+        mix-blend-mode: overlay;
+    }
+    .auth-side {
+        position: relative;
+        overflow: hidden;
+        background: linear-gradient(165deg, #13213f 0%, #0e1629 50%, #0c111c 100%);
+    }
+    .auth-side::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(ellipse 90% 60% at 0% 0%, rgba(59,130,246,.22), rgba(59,130,246,.07) 50%, transparent 80%);
+    }
+    /* Parts that belong to one mode fade out when the other one is active */
+    [data-for] { transition: opacity .45s ease, transform .45s ease; }
+    #auth[data-mode="login"] [data-for="register"],
+    #auth[data-mode="register"] [data-for="login"] { opacity: 0; pointer-events: none; }
+    #auth[data-mode="login"] .auth-side [data-for="register"] { transform: translateY(10px); }
+    #auth[data-mode="register"] .auth-side [data-for="login"] { transform: translateY(-10px); }
+    .auth-track { transition: transform .6s cubic-bezier(.65, 0, .35, 1); }
+    #auth[data-mode="register"] .auth-track { transform: translateX(-50%); }
+    .auth-viewport { transition: height .6s cubic-bezier(.65, 0, .35, 1); }
+    @media (prefers-reduced-motion: reduce) {
+        [data-for], .auth-track, .auth-viewport { transition: none; }
+    }
+</style>
+
+<div id="auth" data-mode="{{ mode }}"
+     data-login-url="{{ url_for('auth.login') }}" data-register-url="{{ url_for('auth.register') }}"
+     class="relative flex-1 flex flex-col items-center lg:justify-center w-full py-5 lg:py-space-xl">
+    <!-- Full-width soft light from the top + grain -->
+    <div aria-hidden="true" class="pointer-events-none absolute inset-y-0 left-1/2 w-screen -translate-x-1/2">
+        <div class="absolute inset-0 auth-light"></div>
+        <div class="absolute inset-0 auth-noise"></div>
+    </div>
+
+    <div class="relative z-10 w-full max-w-[440px] lg:max-w-[900px]">
+        <div class="lg:grid lg:grid-cols-[400px_500px] lg:h-[580px] lg:rounded-2xl lg:overflow-hidden lg:bg-[#141823] lg:border lg:border-white/[.08] lg:shadow-[0_1px_0_rgba(255,255,255,.05)_inset,0_40px_90px_-30px_rgba(0,0,0,.75)]">
+
+            <!-- ============ Left panel (desktop) ============ -->
+            <section aria-hidden="true" class="auth-side hidden lg:block border-r border-white/[.06]">
+                <div class="absolute inset-0 auth-noise"></div>
+
+                <div data-for="login" class="absolute inset-0 p-8 flex flex-col gap-[22px]">
+                    <div class="text-xs font-semibold tracking-[.06em] uppercase text-primary">Ваш портфель</div>
+                    <div class="text-xl font-semibold leading-snug tracking-tight text-on-surface">Войдите — и увидите, сколько он стоит сейчас</div>
+                    <div class="rounded-[14px] bg-[#0d111a]/85 border border-white/[.08] p-[18px] shadow-[0_30px_70px_-30px_rgba(0,0,0,.8)]">
+                        <div class="text-xs font-medium text-outline">Стоимость портфеля</div>
+                        <div class="flex items-baseline gap-2.5 mt-1">
+                            <span class="font-label-ticker text-[28px] font-bold tracking-tight text-on-surface">12 480,20 $</span>
+                            <span class="font-label-ticker text-[13px] text-tertiary">▲ +1,82%</span>
+                        </div>
+                        <svg viewBox="0 0 356 110" preserveAspectRatio="none" class="block w-full h-24 mt-3.5">
+                            <defs><linearGradient id="authArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b82f6" stop-opacity=".35"/><stop offset="1" stop-color="#3b82f6" stop-opacity="0"/></linearGradient></defs>
+                            <path d="M0,110 L0,97 L18,91 L36,94 L53,85 L71,88 L89,77 L107,82 L125,74 L142,69 L160,72 L178,63 L196,66 L214,57 L231,60 L249,49 L267,52 L285,44 L303,47 L320,38 L338,41 L356,31 L356,110 Z" fill="url(#authArea)"/>
+                            <polyline points="0,97 18,91 36,94 53,85 71,88 89,77 107,82 125,74 142,69 160,72 178,63 196,66 214,57 231,60 249,49 267,52 285,44 303,47 320,38 338,41 356,31" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+                        </svg>
+                        <div class="flex h-1.5 rounded-sm overflow-hidden gap-0.5 mt-4">
+                            <span class="w-[48%] bg-[#3b82f6]"></span><span class="w-[34%] bg-[#f59e0b]"></span><span class="w-[18%] bg-[#c4b5fd]"></span>
+                        </div>
+                        <div class="flex justify-between mt-2.5 text-xs text-on-surface-variant">
+                            <span>Акции 48%</span><span>Крипта 34%</span><span>Валюты 18%</span>
+                        </div>
+                    </div>
+                    <div class="mt-auto text-[13px] text-outline">Курсы смотреть можно и без входа — <a href="{{ url_for('market.crypto') }}" class="text-primary hover:underline">открыть котировки →</a></div>
+                </div>
+
+                <div data-for="register" class="absolute inset-0 p-8 flex flex-col gap-[22px]">
+                    <div class="text-xs font-semibold tracking-[.06em] uppercase text-primary">Новый портфель</div>
+                    <div class="text-xl font-semibold leading-snug tracking-tight text-on-surface">Акции, крипта и валюты — в одном месте</div>
+                    <div class="rounded-[14px] bg-[#0d111a]/85 border border-white/[.08] px-[18px] pt-4 pb-2 shadow-[0_30px_70px_-30px_rgba(0,0,0,.8)]">
+                        <div class="flex items-center justify-between gap-2.5 mb-2.5">
+                            <span class="text-xs font-medium text-outline">Портфель <span class="text-on-surface">investor</span></span>
+                            <span class="h-[22px] px-2 inline-flex items-center gap-1 rounded-md bg-blue-500/15 text-primary text-[11px] font-medium">
+                                <span class="material-symbols-outlined text-[13px]">public</span>Публичный
+                            </span>
+                        </div>
+                        {% for mono, hue, title, code, qty, value, change, up in [
+                            ('AAPL', 28, 'Apple Inc', 'AAPL', '3 шт.', '685,20 $', '▲ +0,84%', True),
+                            ('B', 36, 'Bitcoin', 'BTC', '0,05 BTC', '4 171,70 $', '▼ −1,12%', False),
+                            ('€', 140, 'Евро', 'EUR', '1 500 EUR', '1 638,15 $', '▲ +0,18%', True)] %}
+                        <div class="flex items-center gap-2.5 py-2.5 border-t border-white/[.06]">
+                            <span class="shrink-0 w-[30px] h-[30px] flex items-center justify-center font-label-ticker font-bold {{ 'rounded-lg text-[10px]' if mono|length > 1 else 'rounded-full text-[13px]' }}"
+                                  style="color: hsl({{ hue }} 85% 74%); background: hsl({{ hue }} 70% 55% / .16);">{{ mono }}</span>
+                            <div class="flex-1 min-w-0">
+                                <div class="text-[13px] font-semibold text-on-surface truncate">{{ title }} <span class="font-label-ticker text-[11px] text-outline">{{ code }}</span></div>
+                                <div class="font-label-ticker text-[11px] text-outline">{{ qty }}</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="font-label-ticker text-[13px] font-semibold text-on-surface">{{ value }}</div>
+                                <div class="font-label-ticker text-[11px] {{ 'text-tertiary' if up else 'text-error' }}">{{ change }}</div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="mt-auto text-[13px] text-outline">Курсы смотреть можно и без аккаунта — <a href="{{ url_for('market.crypto') }}" class="text-primary hover:underline">открыть котировки →</a></div>
+                </div>
+            </section>
+
+            <!-- ============ Banner (phones and tablets) ============ -->
+            <div aria-hidden="true" class="auth-side lg:hidden relative h-[76px] rounded-[14px] border border-white/[.08] mb-5">
+                <div class="absolute inset-0 auth-noise"></div>
+                <div data-for="login" class="absolute inset-0 px-4 flex items-center gap-3.5">
+                    <div class="relative flex-1 min-w-0">
+                        <div class="text-[11px] font-semibold tracking-[.06em] uppercase text-primary">Ваш портфель</div>
+                        <div class="flex items-baseline gap-2 mt-0.5">
+                            <span class="font-label-ticker text-lg font-bold text-on-surface">12 480,20 $</span>
+                            <span class="font-label-ticker text-[11px] text-tertiary">▲ +1,82%</span>
+                        </div>
+                    </div>
+                    <svg viewBox="0 0 356 110" preserveAspectRatio="none" class="relative w-24 h-[34px] shrink-0">
+                        <defs><linearGradient id="authAreaM" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b82f6" stop-opacity=".35"/><stop offset="1" stop-color="#3b82f6" stop-opacity="0"/></linearGradient></defs>
+                        <path d="M0,110 L0,97 L18,91 L36,94 L53,85 L71,88 L89,77 L107,82 L125,74 L142,69 L160,72 L178,63 L196,66 L214,57 L231,60 L249,49 L267,52 L285,44 L303,47 L320,38 L338,41 L356,31 L356,110 Z" fill="url(#authAreaM)"/>
+                        <polyline points="0,97 18,91 36,94 53,85 71,88 89,77 107,82 125,74 142,69 160,72 178,63 196,66 214,57 231,60 249,49 267,52 285,44 303,47 320,38 338,41 356,31" fill="none" stroke="#60a5fa" stroke-width="2.5" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+                    </svg>
+                </div>
+                <div data-for="register" class="absolute inset-0 px-4 flex items-center gap-3.5">
+                    <div class="relative flex pl-2 shrink-0">
+                        {% for mono, hue, round in [('AAPL', 28, 'rounded-lg w-10 text-[10px]'), ('B', 36, 'rounded-full w-[30px] text-[13px]'), ('€', 140, 'rounded-full w-[30px] text-[13px]')] %}
+                        <span class="-ml-2 h-[30px] {{ round }} flex items-center justify-center font-label-ticker font-bold border-2 border-[#101a30]"
+                              style="color: hsl({{ hue }} 85% 74%); background: hsl({{ hue }} 70% 55% / .18);">{{ mono }}</span>
+                        {% endfor %}
+                    </div>
+                    <div class="relative min-w-0">
+                        <div class="text-[11px] font-semibold tracking-[.06em] uppercase text-primary">Новый портфель</div>
+                        <div class="text-sm font-semibold leading-snug text-on-surface mt-0.5">Акции, крипта и валюты — в одном месте</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============ Forms: two panes in a track that slides sideways ============ -->
+            <div class="auth-viewport overflow-hidden lg:!h-full">
+                <div class="auth-track flex w-[200%] items-start lg:h-full">
+
+                    <!-- Login -->
+                    <div data-pane="login" data-for="login" class="w-1/2 shrink-0 lg:h-full lg:px-11 lg:flex lg:flex-col lg:justify-center">
+                        <h1 class="text-2xl font-semibold tracking-tight text-on-surface">Вход</h1>
+                        <p class="mt-1 mb-[18px] lg:mb-6 text-sm text-on-surface-variant">С возвращением! Введите данные аккаунта</p>
+
+                        {% if message and not is_reg %}
+                        <div class="mb-4 bg-error-container/20 border border-error/30 text-error px-4 py-3 rounded-lg text-sm flex items-center gap-2">
+                            <span class="material-symbols-outlined text-[18px]">error</span><span>{{ message }}</span>
+                        </div>
+                        {% endif %}
+
+                        <form action="{{ url_for('auth.login') }}" method="post" class="flex flex-col gap-3.5 lg:gap-4" novalidate>
+                            {{ lf.hidden_tag() }}
+                            <div class="flex flex-col gap-1.5">
+                                <label for="{{ lf.email_or_username.id }}" class="text-[13px] font-medium text-on-surface">Email или логин</label>
+                                {{ input(lf.email_or_username, 'person', placeholder='name@example.com', autocomplete='username', extra='autocapitalize="off" spellcheck="false" required') }}
+                                {{ errors(lf.email_or_username) }}
+                            </div>
+                            <div class="flex flex-col gap-1.5">
+                                <div class="flex items-center justify-between">
+                                    <label for="{{ lf.password.id }}" class="text-[13px] font-medium text-on-surface">Пароль</label>
+                                    <a href="#" class="text-[13px] text-primary hover:underline underline-offset-4">Забыли пароль?</a>
+                                </div>
+                                {{ input(lf.password, 'lock', type='password', placeholder='••••••••', autocomplete='current-password', extra='required', password=True) }}
+                                {{ errors(lf.password) }}
+                            </div>
+                            <label class="flex items-center gap-2.5 min-h-8 cursor-pointer select-none text-sm text-on-surface-variant">
+                                <input type="checkbox" name="{{ lf.remember_me.name }}" id="{{ lf.remember_me.id }}" {% if lf.remember_me.data %}checked{% endif %} class="peer sr-only">
+                                <span class="w-5 h-5 lg:w-4 lg:h-4 rounded-[5px] lg:rounded border border-outline-variant bg-surface-container-lowest flex items-center justify-center text-transparent peer-checked:bg-blue-600 peer-checked:border-blue-600 peer-checked:text-white peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500/50 transition-colors">
+                                    <span class="material-symbols-outlined text-[14px] lg:text-[13px]">check</span>
+                                </span>
+                                Запомнить меня
+                            </label>
+                            <button type="submit" class="mt-1 h-12 lg:h-11 rounded-[10px] lg:rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-base lg:text-[15px] font-semibold transition-colors">Войти</button>
+                        </form>
+                        <p class="mt-[18px] lg:mt-[22px] text-center text-sm text-on-surface-variant">
+                            Нет аккаунта?
+                            <a href="{{ url_for('auth.register') }}" data-switch="register" class="font-medium text-primary hover:underline underline-offset-4">Зарегистрироваться</a>
+                        </p>
+                    </div>
+
+                    <!-- Register -->
+                    <div data-pane="register" data-for="register" class="w-1/2 shrink-0 lg:h-full lg:px-11 lg:flex lg:flex-col lg:justify-center">
+                        <h1 class="text-2xl font-semibold tracking-tight text-on-surface">Регистрация</h1>
+                        <p class="mt-1 mb-[18px] lg:mb-6 text-sm text-on-surface-variant">Займёт меньше минуты</p>
+
+                        {% if message and is_reg %}
+                        <div class="mb-4 bg-error-container/20 border border-error/30 text-error px-4 py-3 rounded-lg text-sm flex items-center gap-2">
+                            <span class="material-symbols-outlined text-[18px]">error</span><span>{{ message }}</span>
+                        </div>
+                        {% endif %}
+
+                        <form action="{{ url_for('auth.register') }}" method="post" class="flex flex-col gap-3.5" novalidate>
+                            {{ rf.hidden_tag() }}
+                            <div class="flex flex-col gap-1.5">
+                                <label for="{{ rf.username.id }}" class="text-[13px] font-medium text-on-surface">Логин</label>
+                                {{ input(rf.username, 'person', placeholder='investor', autocomplete='username', extra='autocapitalize="off" spellcheck="false" required') }}
+                                {% if rf.username.errors %}{{ errors(rf.username) }}
+                                {% else %}<span class="text-xs text-outline">Будет в ссылке на портфель. Без символа «@»</span>{% endif %}
+                            </div>
+                            <div class="flex flex-col gap-1.5">
+                                <label for="{{ rf.email.id }}" class="text-[13px] font-medium text-on-surface">Электронная почта</label>
+                                {{ input(rf.email, 'mail', type='email', placeholder='name@example.com', autocomplete='email', extra='inputmode="email" autocapitalize="off" spellcheck="false" required') }}
+                                {{ errors(rf.email) }}
+                            </div>
+                            <div class="flex flex-col gap-1.5">
+                                <label for="{{ rf.password.id }}" class="text-[13px] font-medium text-on-surface">Пароль</label>
+                                {{ input(rf.password, 'lock', type='password', placeholder='Минимум 5 символов', autocomplete='new-password', extra='minlength="5" required', password=True) }}
+                                {{ errors(rf.password) }}
+                            </div>
+                            <button type="submit" class="mt-1.5 h-12 lg:h-11 rounded-[10px] lg:rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-base lg:text-[15px] font-semibold transition-colors">Создать аккаунт</button>
+                        </form>
+                        <p class="mt-[18px] lg:mt-5 text-center text-sm text-on-surface-variant">
+                            Уже есть аккаунт?
+                            <a href="{{ url_for('auth.login') }}" data-switch="login" class="font-medium text-primary hover:underline underline-offset-4">Войти</a>
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function togglePassword(btn) {
+    const input = btn.parentElement.querySelector('input');
+    const show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    btn.querySelector('span').textContent = show ? 'visibility_off' : 'visibility';
+    btn.setAttribute('aria-label', show ? 'Скрыть пароль' : 'Показать пароль');
+}
+
+(function () {
+    const root = document.getElementById('auth');
+    const viewport = root.querySelector('.auth-viewport');
+    const titles = { login: 'Вход', register: 'Регистрация' };
+    const urls = { login: root.dataset.loginUrl, register: root.dataset.registerUrl };
+    const desktop = window.matchMedia('(min-width: 1024px)');
+
+    // On phones the two forms differ in height: the viewport follows the visible one
+    function fitHeight() {
+        if (desktop.matches) { viewport.style.height = ''; return; }
+        viewport.style.height = root.querySelector('[data-pane="' + root.dataset.mode + '"]').offsetHeight + 'px';
+    }
+
+    function setMode(mode, push) {
+        if (mode === root.dataset.mode) return;
+        root.dataset.mode = mode;
+        root.querySelectorAll('[data-pane]').forEach(function (pane) {
+            const hidden = pane.dataset.pane !== mode;
+            pane.inert = hidden;
+            pane.setAttribute('aria-hidden', hidden);
+        });
+        document.title = titles[mode] + " · What's the rate";
+        if (push) history.pushState({ authMode: mode }, '', urls[mode]);
+        fitHeight();
+        const first = root.querySelector('[data-pane="' + mode + '"] input:not([type=hidden])');
+        if (first && desktop.matches) setTimeout(function () { first.focus({ preventScroll: true }); }, 450);
+    }
+
+    root.querySelectorAll('[data-switch]').forEach(function (link) {
+        link.addEventListener('click', function (e) {
+            e.preventDefault();
+            setMode(link.dataset.switch, true);
+        });
+    });
+    window.addEventListener('popstate', function () {
+        setMode(location.pathname.replace(/\/$/, '').endsWith('register') ? 'register' : 'login', false);
+    });
+    window.addEventListener('resize', fitHeight);
+
+    // Initial state: hide the inactive form from keyboard and screen readers (no animation)
+    root.querySelectorAll('[data-pane]').forEach(function (pane) {
+        const hidden = pane.dataset.pane !== root.dataset.mode;
+        pane.inert = hidden;
+        pane.setAttribute('aria-hidden', hidden);
+    });
+    fitHeight();
+    history.replaceState({ authMode: root.dataset.mode }, '', location.href);
+})();
+</script>
+{% endblock %}
