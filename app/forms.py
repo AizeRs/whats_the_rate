@@ -22,17 +22,6 @@ class RegisterForm(FlaskForm):
     submit = SubmitField('Зарегистрироваться')
 
 
-class SearchTickerForm(FlaskForm):
-    """Form for searching financial tickers."""
-    ticker = StringField('Тикер или его начало')
-    submit1 = SubmitField('Найти')
-
-
-class ReloadDataForm(FlaskForm):
-    """Form to trigger data reloading/refreshing."""
-    submit2 = SubmitField('Обновить')
-
-
 class ChangePassForm(FlaskForm):
     """Form for changing user password."""
     old_password = PasswordField('Старый пароль', validators=[DataRequired()])
@@ -51,3 +40,9 @@ class CreatePortfolio(FlaskForm):
     """Form for creating a new portfolio."""
     submit_private = SubmitField('Создать приватный портфель только для Вас')
     submit_public = SubmitField('Создать публичный портфель с доступом по ссылке')
+
+
+class PortfolioVisibility(FlaskForm):
+    """Form for switching an existing portfolio between private and public."""
+    make_private = SubmitField('Приватный')
+    make_public = SubmitField('Публичный')

@@ -41,7 +41,7 @@ def portfolio_price():
             return jsonify({'Error': 'Invalid apikey'}), 401
             
         if base_currency == 'user':
-            pref_symbol = MAIN_SYMBOLS[user.main_currency]
+            pref_symbol = MAIN_SYMBOLS.get(user.main_currency, MAIN_SYMBOLS['USD'])
             
         if not user.portfolio_id:
             return jsonify({'Error': 'User has no portfolio'}), 404
@@ -83,7 +83,7 @@ def reload_portfolio():
     for ticker in data['stocks'].keys():
         price_data = ticker_price(ticker)
         if price_data and price_data[0]:
-            save_ticker_price(ticker, price_data[0])
+            save_ticker_price(ticker, price_data[0], price_data[1].get('dp'))
         else:
             return jsonify({'Error': 'Stocks API limit exceeded'})
             
