@@ -1,5 +1,8 @@
+from datetime import date, timedelta
 from app.constants import FINNHUB_APIKEY
 import requests
+
+FRANKFURTER_URL = 'https://api.frankfurter.app'
 
 def ticker_price(ticker):
     """Fetches the current price and full quote for a given stock ticker."""
@@ -12,34 +15,84 @@ def ticker_price(ticker):
         print(f"Error fetching ticker price for {ticker}: {e}")
         return None
 
+def fetch_quote(ticker):
+    """Fetches a stock quote from Finnhub.
+
+    Returns (status, quote): status is 'ok', 'limit' (rate limit hit), 'no_data' (unknown ticker
+    or no trades) or 'error'; quote is Finnhub's dict ({'c': price, 'dp': change %, ...}) when 'ok'.
+    """
+    try:
+        resp = requests.get('https://finnhub.io/api/v1/quote',
+                            params={'symbol': ticker, 'token': FINNHUB_APIKEY}, timeout=10)
+    except Exception as e:
+        print(f"Error fetching quote for {ticker}: {e}")
+        return 'error', None
+    if resp.status_code == 429:
+        return 'limit', None
+    try:
+        data = resp.json()
+    except ValueError:
+        return 'error', None
+    if resp.status_code != 200 or not isinstance(data, dict):
+        if isinstance(data, dict) and 'limit' in str(data.get('error', '')).lower():
+            return 'limit', None
+        return 'error', None
+    if data.get('c'):
+        return 'ok', data
+    return 'no_data', None
+
 def fetch_crypto_data():
-    """Fetches top crypto data from CoinGecko."""
+    """Fetches top crypto data from CoinGecko with error handling and rate-limit safety."""
     lines = []
-    for page in (1, 2):
-        response = requests.get(
-            f'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page={page}'
-        ).json()
-        if isinstance(response, dict) and 'error' in response:
-            return False, []
-        for elem in response:
-            if elem.get("symbol") and elem.get("id") and elem.get("current_price"):
-                lines.append(
-                    f'{elem["symbol"].upper()},{elem["id"].lower()},{elem["current_price"]}\n')
-    return True, lines
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/json'
+    }
+    try:
+        url = 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=1'
+        resp = requests.get(url, headers=headers, timeout=10)
+        if resp.status_code == 200:
+            data = resp.json()
+            if isinstance(data, list):
+                for elem in data:
+                    if isinstance(elem, dict) and elem.get("symbol") and elem.get("id") and elem.get("current_price") is not None:
+                        lines.append(
+                            f'{elem["symbol"].upper()},{elem["id"].lower()},{elem["current_price"]},{(elem.get("name") or "").strip()}\n')
+                if lines:
+                    return True, lines
+        print(f"Warning: CoinGecko returned status {resp.status_code}")
+        return False, []
+    except Exception as e:
+        print(f"Error fetching crypto data from CoinGecko: {e}")
+        return False, []
 
 def fetch_fiat_data():
-    """Fetches fiat data from Frankfurter."""
-    names = requests.get('https://api.frankfurter.app/currencies').json()
-    prices_resp = requests.get('https://api.frankfurter.app/latest?from=USD').json()
-    prices = prices_resp.get('rates', {})
-    prices['USD'] = 1.0  # Base currency
-    if not (names and prices):
-        return False, {}, {}
-    return True, names, prices
+    """Fetches currency names and the two latest ECB fixings (units per 1 USD) from Frankfurter.
+
+    Returns (success, names, rates, previous_rates, rate_date).
+    """
+    try:
+        names = requests.get(f'{FRANKFURTER_URL}/currencies', timeout=10).json()
+        latest = requests.get(f'{FRANKFURTER_URL}/latest', params={'from': 'USD'}, timeout=10).json()
+        rate_date = date.fromisoformat(latest['date'])
+        # For a weekend/holiday Frankfurter returns the closest earlier fixing, i.e. the previous one
+        day_before = (rate_date - timedelta(days=1)).isoformat()
+        previous = requests.get(f'{FRANKFURTER_URL}/{day_before}', params={'from': 'USD'}, timeout=10).json()
+    except Exception as e:
+        print(f"Error fetching fiat data from Frankfurter: {e}")
+        return False, {}, {}, {}, None
+    rates = latest.get('rates', {})
+    previous_rates = previous.get('rates', {})
+    rates['USD'] = previous_rates['USD'] = 1.0  # Base currency
+    if not (names and rates):
+        return False, {}, {}, {}, None
+    return True, names, rates, previous_rates, rate_date
 
 def fetch_tickers_data():
     """Fetches list of all US tickers from Finnhub."""
     api_url = f'https://finnhub.io/api/v1/stock/symbol?exchange=US&token={FINNHUB_APIKEY}'
     response = requests.get(api_url).json()
-    my_list = [[item.get('symbol', ''), item.get('description', '').replace(',', '')] for item in response if item.get('symbol')]
+    my_list = [[item.get('symbol', ''), item.get('description', '').replace(',', ''),
+                item.get('type') or None, item.get('mic') or None]
+               for item in response if item.get('symbol')]
     return my_list

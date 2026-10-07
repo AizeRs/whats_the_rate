@@ -1,40 +1,166 @@
-<!DOCTYPE html>
-<html lang="en">
 {% extends "base.html" %}
+
+{% block title %}Авторизация · What's the rate{% endblock %}
+
 {% block content %}
-<h1>Авторизация</h1>
-<head>
-    <meta charset="UTF-8">
-    <title>Авторизация · What's the rate</title>
-</head>
-<form action="" method="post">
-    {{ form.hidden_tag() }}
-    <p>
-        {{ form.email_or_username.label }}<br>
-        {{ form.email_or_username(class="form-control", type="text") }}<br>
-        {% for error in form.email_or_username.errors %}
-    <div class="alert alert-danger" role="alert">
-        {{ error }}
+<div class="flex-1 flex flex-col w-full items-center justify-center py-space-md relative">
+    <!-- Ambient Luminous Glow Orbs -->
+    <div class="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden">
+        <div class="w-[520px] h-[520px] rounded-full bg-primary-container/10 blur-[130px] -translate-y-6"></div>
+        <div class="w-[380px] h-[380px] rounded-full bg-secondary-container/10 blur-[110px] translate-x-32 translate-y-28"></div>
     </div>
-    {% endfor %}
-    </p>
-    <p>
-        {{ form.password.label }}<br>
-        {{ form.password(class="form-control", type="password") }}<br>
-        {% for error in form.password.errors %}
-    <div class="alert alert-danger" role="alert">
-        {{ error }}
+
+    <!-- Login Card -->
+    <div class="w-full max-w-[440px] relative z-10 mx-auto px-space-sm sm:px-0">
+        <div class="bg-surface-container-low/95 border border-outline-variant/30 backdrop-blur-2xl rounded-xl shadow-2xl p-space-lg sm:p-space-xl flex flex-col gap-space-lg">
+            
+            <!-- Card Header -->
+            <div class="flex flex-col items-center text-center gap-space-xs">
+                <div class="w-11 h-11 rounded-lg bg-surface-container-high flex items-center justify-center text-primary mb-space-xs shadow-inner">
+                    <span class="material-symbols-outlined text-[22px]">lock</span>
+                </div>
+                <h1 class="font-headline-lg text-headline-lg text-on-surface font-semibold tracking-tight">
+                    Авторизация
+                </h1>
+                <p class="font-body-sm text-body-sm text-on-surface-variant max-w-[340px] text-center leading-relaxed">
+                    Войдите в систему для доступа к терминалу котировок и портфелю
+                </p>
+            </div>
+
+            <!-- Server Error Alert -->
+            {% if message %}
+            <div class="bg-error-container/20 border border-error/30 text-error px-4 py-3 rounded-lg text-body-sm flex items-center gap-2">
+                <span class="material-symbols-outlined text-[18px]">error</span>
+                <span>{{ message }}</span>
+            </div>
+            {% endif %}
+
+            <!-- Form -->
+            <form action="" method="post" class="flex flex-col gap-space-md" novalidate>
+                {{ form.hidden_tag() }}
+
+                <!-- Identifier Field -->
+                <div class="flex flex-col gap-space-xs">
+                    <label class="font-body-sm text-body-sm font-medium text-on-surface" for="{{ form.email_or_username.id }}">
+                        Email или логин
+                    </label>
+                    <div class="relative flex items-center">
+                        <span class="material-symbols-outlined text-outline absolute left-3 pointer-events-none text-[18px]">
+                            person
+                        </span>
+                        <input
+                            type="text"
+                            name="{{ form.email_or_username.name }}"
+                            id="{{ form.email_or_username.id }}"
+                            value="{{ form.email_or_username.data or '' }}"
+                            placeholder="name@example.com"
+                            autocomplete="username"
+                            required
+                            class="w-full bg-surface-container text-on-surface font-body-md text-body-md pl-10 pr-space-md py-2.5 rounded-lg border border-outline-variant/40 placeholder:text-outline/70 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/40 focus:bg-surface-container-high transition-all"
+                        >
+                    </div>
+                    {% for error in form.email_or_username.errors %}
+                    <div class="text-error text-body-sm flex items-center gap-1 mt-1">
+                        <span class="material-symbols-outlined text-[14px]">warning</span>
+                        <span>{{ error }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Password Field -->
+                <div class="flex flex-col gap-space-xs">
+                    <div class="flex items-center justify-between">
+                        <label class="font-body-sm text-body-sm font-medium text-on-surface" for="{{ form.password.id }}">
+                            Пароль
+                        </label>
+                        <a class="font-body-sm text-body-sm text-primary hover:text-primary-fixed transition-colors underline-offset-4 hover:underline" href="#">
+                            Забыли пароль?
+                        </a>
+                    </div>
+                    <div class="relative flex items-center">
+                        <span class="material-symbols-outlined text-outline absolute left-3 pointer-events-none text-[18px]">
+                            key
+                        </span>
+                        <input
+                            type="password"
+                            name="{{ form.password.name }}"
+                            id="{{ form.password.id }}"
+                            placeholder="••••••••"
+                            autocomplete="current-password"
+                            required
+                            class="w-full bg-surface-container text-on-surface font-body-md text-body-md pl-10 pr-10 py-2.5 rounded-lg border border-outline-variant/40 placeholder:text-outline/70 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/40 focus:bg-surface-container-high transition-all"
+                        >
+                        <button
+                            type="button"
+                            id="toggle-password-btn"
+                            aria-label="Показать или скрыть пароль"
+                            class="absolute right-2.5 p-1 rounded-md text-outline hover:text-on-surface transition-colors focus:outline-none flex items-center justify-center"
+                        >
+                            <span class="material-symbols-outlined text-[19px]" id="password-toggle-icon">visibility</span>
+                        </button>
+                    </div>
+                    {% for error in form.password.errors %}
+                    <div class="text-error text-body-sm flex items-center gap-1 mt-1">
+                        <span class="material-symbols-outlined text-[14px]">warning</span>
+                        <span>{{ error }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Remember Me Checkbox -->
+                <div class="flex items-center justify-between pt-0.5">
+                    <label class="inline-flex items-center gap-space-sm cursor-pointer select-none group">
+                        <input
+                            type="checkbox"
+                            name="{{ form.remember_me.name }}"
+                            id="{{ form.remember_me.id }}"
+                            {% if form.remember_me.data %}checked{% endif %}
+                            class="sr-only peer"
+                        >
+                        <div class="w-4 h-4 rounded bg-surface-container border border-outline-variant/50 flex items-center justify-center text-transparent peer-checked:bg-primary-container peer-checked:text-white peer-checked:border-primary-container transition-all shadow-sm">
+                            <span class="material-symbols-outlined text-[13px] font-bold">check</span>
+                        </div>
+                        <span class="font-body-sm text-body-sm text-on-surface-variant group-hover:text-on-surface transition-colors">
+                            {{ form.remember_me.label.text }}
+                        </span>
+                    </label>
+                </div>
+
+                <!-- Buttons -->
+                <div class="flex flex-col sm:flex-row gap-space-sm pt-space-xs">
+                    <button
+                        type="submit"
+                        class="flex-1 bg-primary-container hover:bg-primary-container/90 text-white font-headline-md text-[15px] font-semibold py-2.5 px-space-md rounded-lg shadow-lg shadow-primary-container/20 transition-all flex items-center justify-center gap-space-xs active:scale-[0.99]"
+                    >
+                        <span>Войти</span>
+                        <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+                    </button>
+                    <a
+                        href="{{ url_for('auth.register') }}"
+                        class="flex-1 bg-surface-container hover:bg-surface-container-high border border-outline-variant/40 text-on-surface font-headline-md text-[15px] font-medium py-2.5 px-space-md rounded-lg transition-all text-center flex items-center justify-center"
+                    >
+                        Регистрация
+                    </a>
+                </div>
+            </form>
+
+        </div>
     </div>
-    {% endfor %}
-    </p>
-    <p>{{ form.remember_me() }} {{ form.remember_me.label }}</p>
-    <p>
-        {{ form.submit(type="submit", class="btn btn-primary") }}
-        <a href="{{ url_for('auth.register') }}">
-            <button type="button" class="btn btn-primary" style="margin-left: 3%">Регистрация</button>
-        </a>
-    </p>
-    <div>{{ message }}</div>
-</form>
+</div>
+
+<script>
+(function() {
+    const toggleBtn = document.getElementById('toggle-password-btn');
+    const pwdInput = document.getElementById('{{ form.password.id }}');
+    const icon = document.getElementById('password-toggle-icon');
+
+    if (toggleBtn && pwdInput && icon) {
+        toggleBtn.addEventListener('click', () => {
+            const isHidden = pwdInput.type === 'password';
+            pwdInput.type = isHidden ? 'text' : 'password';
+            icon.textContent = isHidden ? 'visibility_off' : 'visibility';
+        });
+    }
+})();
+</script>
 {% endblock %}
-</html>

@@ -1,0 +1,149 @@
+{# Summary + tables of a portfolio. Rendered inside portfolios.html and returned by AJAX after every change. #}
+{% set grid_cols = 'sm:grid-cols-[minmax(0,1fr)_150px_190px_160px_64px_80px]' if is_owner else 'sm:grid-cols-[minmax(0,1fr)_150px_190px_160px_64px]' %}
+
+{% if is_empty %}
+<section class="px-6 py-10 bg-surface-container rounded-xl border border-outline-variant/30 flex flex-col items-center gap-2 text-center">
+    <h2 class="text-xl font-semibold text-on-surface">В портфеле пока ничего нет</h2>
+    <p class="text-outline">{% if is_owner %}Добавляйте активы кнопкой «В портфель» на страницах рынков{% else %}Владелец ещё не добавил активы{% endif %}</p>
+    {% if is_owner %}
+    <div class="mt-3 flex gap-2.5 flex-wrap justify-center">
+        <a href="{{ url_for('market.crypto') }}" class="h-10 px-4 inline-flex items-center rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition-colors">Криптовалюты</a>
+        <a href="{{ url_for('market.stocks') }}" class="h-10 px-4 inline-flex items-center rounded-lg border border-outline-variant/50 hover:border-outline hover:bg-surface-container-high text-on-surface text-sm font-medium transition-colors">Акции</a>
+        <a href="{{ url_for('market.fiat') }}" class="h-10 px-4 inline-flex items-center rounded-lg border border-outline-variant/50 hover:border-outline hover:bg-surface-container-high text-on-surface text-sm font-medium transition-colors">Фиатные валюты</a>
+    </div>
+    {% endif %}
+</section>
+{% else %}
+
+<!-- Summary -->
+<section aria-label="Итог" class="bg-surface-container rounded-xl border border-outline-variant/30 p-6 flex flex-col gap-5">
+    <div class="flex justify-between items-end gap-4 flex-wrap">
+        <div>
+            <div class="text-[13px] font-medium text-outline">Стоимость портфеля</div>
+            <div class="mt-1 font-label-numeric-lg text-[40px] leading-tight font-bold tracking-tight tabular-nums text-on-surface">{{ total_str }}</div>
+        </div>
+        <div class="text-[13px] text-outline sm:text-right">по последним загруженным ценам<br>в {{ currency_code }}</div>
+    </div>
+    <div>
+        <div role="img" aria-label="{% for c in categories %}{{ c.title }} {{ c.share_str or '0%' }}{% if not loop.last %}, {% endif %}{% endfor %}"
+             class="flex h-3 rounded-md overflow-hidden gap-0.5 bg-surface-container-high">
+            {% for c in categories %}{% if c.rows %}<span style="width: {{ c.pct }}%; background: {{ c.color }};"></span>{% endif %}{% endfor %}
+        </div>
+        <div class="mt-3.5 grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {% for c in categories %}
+            <a href="#{{ c.kind }}" class="flex flex-col gap-0.5 text-on-surface hover:opacity-90">
+                <span class="flex items-center gap-2 text-[13px] text-on-surface-variant">
+                    <span aria-hidden="true" class="w-2.5 h-2.5 rounded-[3px]" style="background: {{ c.color }};"></span>{{ c.title }}
+                    {% if c.share_str %}<span class="font-label-ticker text-outline">{{ c.share_str }}</span>{% endif %}
+                </span>
+                <span class="font-label-numeric-md text-[17px] font-semibold tabular-nums">{{ c.sum_str }}</span>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Tables -->
+{% for c in categories %}
+<section id="{{ c.kind }}" aria-label="{{ c.title }}" class="bg-surface-container rounded-xl overflow-hidden border border-outline-variant/30 scroll-mt-20">
+    <div class="px-5 py-4 flex items-center justify-between gap-3 flex-wrap">
+        <h2 class="flex items-center gap-2.5 text-[17px] font-semibold text-on-surface">
+            <span aria-hidden="true" class="w-2.5 h-2.5 rounded-[3px]" style="background: {{ c.color }};"></span>{{ c.title }}
+            <span class="font-label-numeric-md text-[15px] font-semibold text-on-surface-variant">{{ c.sum_str }}</span>
+        </h2>
+        {% if is_owner and not (c.kind == 'stocks' and stocks_full) %}
+        <a href="{{ c.url }}" class="text-sm font-medium text-primary hover:underline">{{ c.add_label }}</a>
+        {% endif %}
+    </div>
+
+    {% if not c.rows %}
+    <div class="px-5 py-5 border-t border-outline-variant/20 text-sm text-outline">Здесь пока ничего нет.</div>
+    {% else %}
+    <div class="hidden sm:grid {{ grid_cols }} gap-4 items-center px-5 py-2.5 border-t border-outline-variant/30 bg-surface-container-low text-xs font-medium text-outline">
+        <span>Актив</span>
+        <span class="text-right">Количество</span>
+        <span class="text-right">Цена, {{ currency_code }}</span>
+        <span class="text-right">Стоимость, {{ currency_code }}</span>
+        <span class="text-right">Доля</span>
+        {% if is_owner %}<span class="sr-only">Действия</span>{% endif %}
+    </div>
+    {% for r in c.rows %}
+    <div class="asset-row grid grid-cols-[minmax(0,1fr)_auto] {{ grid_cols }} gap-x-4 gap-y-2 items-center px-5 py-3 sm:py-0 sm:min-h-[68px] border-t border-outline-variant/20 hover:bg-surface-container-high/60 transition-colors"
+         data-kind="{{ c.kind }}" data-code="{{ r.code }}" data-qty="{{ r.qty }}">
+        <!-- Asset -->
+        <div class="flex items-center gap-3 min-w-0">
+            <span aria-hidden="true" class="w-10 h-10 flex items-center justify-center shrink-0 font-bold {{ 'rounded-[10px] font-label-ticker text-xs' if r.square else ('rounded-full ' ~ ('text-base' if r.mono|length == 1 else 'text-sm')) }}"
+                  style="color: hsl({{ r.hue }} 85% 74%); background: hsl({{ r.hue }} 70% 55% / 0.14);">{{ r.mono }}</span>
+            <div class="flex items-baseline gap-2 min-w-0">
+                <span class="text-[15px] font-semibold text-on-surface truncate">{{ r.title }}</span>
+                <span class="font-label-ticker text-[13px] font-semibold text-on-surface-variant shrink-0">{{ r.code }}</span>
+            </div>
+        </div>
+
+        <!-- Quantity -->
+        <div class="flex justify-end items-center">
+            <span class="qty-view font-label-ticker text-sm text-on-surface-variant whitespace-nowrap">{{ r.qty_str }} {{ r.unit }}</span>
+            {% if is_owner %}
+            <div class="qty-edit hidden items-center h-9 w-[130px] rounded-lg bg-surface-container-lowest border border-blue-500 focus-within:ring-[3px] focus-within:ring-blue-500/25">
+                <input type="text" inputmode="decimal" aria-label="Количество {{ r.code }}" autocomplete="off"
+                       class="qty-input flex-1 min-w-0 h-full pl-2.5 pr-1.5 bg-transparent text-on-surface font-label-ticker text-sm text-right focus:outline-none"
+                       onkeydown="qtyKey(event, this)"/>
+                <span class="pr-2 text-xs text-outline">{{ r.unit }}</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Price -->
+        <div class="flex flex-col items-end gap-0.5">
+            {% if r.price_str %}
+            <span class="font-label-numeric-md text-[15px] font-semibold tabular-nums whitespace-nowrap {{ 'text-on-surface' if r.age.fresh else 'text-on-surface-variant' }}" title="{{ r.age.title }}">{{ r.price_str }}</span>
+            {% if r.age.fresh %}
+            <span class="font-label-ticker text-xs whitespace-nowrap">
+                {%- if r.change_str %}<span class="{{ {'up': 'text-tertiary', 'down': 'text-error'}.get(r.change_dir, 'text-outline') }}">{{ r.change_str }}</span><span class="text-outline"> · </span>{% endif -%}
+                <span class="text-outline">{{ r.age.label }}</span>
+            </span>
+            {% else %}
+            <span class="flex items-center gap-1 text-xs whitespace-nowrap {{ 'text-amber-300' if r.age.very_stale else 'text-outline' }}">
+                <span class="material-symbols-outlined text-[14px]">schedule</span>{{ r.age.label or 'время обновления неизвестно' }}
+            </span>
+            {% endif %}
+            {% else %}
+            <span class="text-sm text-outline">Нет данных</span>
+            {% endif %}
+        </div>
+
+        <!-- Value, share -->
+        <span class="hidden sm:block text-right font-label-numeric-md text-[15px] font-semibold tabular-nums whitespace-nowrap {{ 'text-on-surface' if r.age.fresh else 'text-on-surface-variant' }}">{{ r.value_str }}</span>
+        <span class="hidden sm:block text-right font-label-ticker text-[13px] text-on-surface-variant">{{ r.share_str }}</span>
+
+        <!-- Actions -->
+        {% if is_owner %}
+        <div class="col-span-2 sm:col-span-1 flex justify-end gap-1.5">
+            <div class="view-actions flex gap-1.5">
+                <button type="button" onclick="editQty(this)" aria-label="Изменить количество {{ r.code }}" title="Изменить количество"
+                        class="h-9 w-9 rounded-lg border border-outline-variant/50 text-outline hover:text-on-surface hover:bg-surface-container-high flex items-center justify-center transition-colors cursor-pointer">
+                    <span class="material-symbols-outlined text-[17px]">edit</span>
+                </button>
+                <button type="button" onclick="removeAsset(this)" aria-label="Убрать {{ r.code }} из портфеля" title="Убрать из портфеля"
+                        class="h-9 w-9 rounded-lg border border-outline-variant/50 text-outline hover:text-on-surface hover:bg-surface-container-high flex items-center justify-center transition-colors cursor-pointer">
+                    <span class="material-symbols-outlined text-[17px]">delete</span>
+                </button>
+            </div>
+            <div class="edit-actions hidden gap-1.5">
+                <button type="button" onclick="saveQty(this)" aria-label="Сохранить количество"
+                        class="save-btn h-9 w-9 rounded-lg bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center transition-colors cursor-pointer">
+                    <span class="material-symbols-outlined text-[18px]">check</span>
+                </button>
+                <button type="button" onclick="cancelEdit(this)" aria-label="Отмена"
+                        class="h-9 w-9 rounded-lg border border-outline-variant/50 text-outline hover:text-on-surface hover:bg-surface-container-high flex items-center justify-center transition-colors cursor-pointer">
+                    <span class="material-symbols-outlined text-[16px]">close</span>
+                </button>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+    {% endif %}
+</section>
+{% endfor %}
+{% endif %}

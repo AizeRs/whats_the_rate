@@ -10,7 +10,6 @@ MAIN_SYMBOLS = {
     'GBP': ('£', 0), 
     'JPY': ('¥', 0), 
     'CHF': ('₣', 0),
-    'BTC': ('₿', 0)
 }
 
 def load_main_symbols():
