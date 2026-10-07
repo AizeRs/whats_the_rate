@@ -65,7 +65,7 @@
         </div>
 
         {% if is_owner %}
-        <div id="undoBar" role="status" class="hidden sticky bottom-6 self-center pl-4 pr-2.5 py-2.5 items-center gap-3.5 rounded-lg bg-surface-container-high border border-outline-variant/60 shadow-[0_8px_24px_rgba(0,0,0,0.4)] text-sm text-on-surface">
+        <div id="undoBar" role="status" class="hidden sticky bottom-[calc(5rem+env(safe-area-inset-bottom))] md:bottom-6 self-center pl-4 pr-2.5 py-2.5 items-center gap-3.5 rounded-lg bg-surface-container-high border border-outline-variant/60 shadow-[0_8px_24px_rgba(0,0,0,0.4)] text-sm text-on-surface">
             <span id="undoText"></span>
             <button type="button" onclick="undoRemove()" class="h-8 px-3 rounded-lg border border-outline-variant/60 text-primary font-semibold hover:bg-surface-container-highest transition-colors cursor-pointer">Вернуть</button>
         </div>
@@ -73,6 +73,14 @@
         {% endif %}
     </div>
 </div>
+
+<style>
+    /* Phones: while editing, the quantity field and save/cancel take a separate line under the asset */
+    @media (max-width: 639px) {
+        .asset-row.editing .qty-cell { display: flex; grid-column: 1; grid-row: 3; }
+        .asset-row.editing .row-actions { grid-row: 3; align-self: center; }
+    }
+</style>
 
 {% if is_owner %}
 <script>
@@ -135,6 +143,7 @@ async function reloadPrices(auto) {
 
 /* ---------- Quantities ---------- */
 function setEditing(row, editing) {
+    row.classList.toggle('editing', editing);
     showEl(row.querySelector('.qty-edit'), editing);
     row.querySelector('.qty-view').classList.toggle('hidden', editing);
     showEl(row.querySelector('.edit-actions'), editing);

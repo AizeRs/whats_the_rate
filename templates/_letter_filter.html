@@ -1,0 +1,83 @@
+{#
+  Mobile-only filter by first symbol: one horizontally scrolling strip (sticky under the header)
+  plus a bottom sheet with the full grid. The desktop pages keep their own wrapped chip list.
+
+  groups: list of (title, chars, grid_class), e.g. [('Буквы', 'ABC…', 'grid-cols-6'), ('Цифры', '0123…', 'grid-cols-5')]
+  active: currently selected symbol ('' when none)
+  endpoint: url_for endpoint that takes `letter`
+  lower_urls: put lowercase symbols into URLs (crypto)
+  top_url / top_label / top_on: optional first button (crypto "Топ-50")
+#}
+{% macro mobile_filter(title, groups, active, endpoint, lower_urls=False, top_url=None, top_label='', top_on=False) %}
+{% set chip = 'w-10 h-9 shrink-0 rounded-lg border font-label-ticker text-[13px] font-semibold flex items-center justify-center transition-colors' %}
+{% set cell = 'h-11 rounded-[10px] border font-label-ticker text-sm font-semibold flex items-center justify-center transition-colors' %}
+{% set on_cls = 'bg-blue-600 border-blue-600 text-white' %}
+{% set off_cls = 'bg-transparent border-outline-variant/50 text-on-surface-variant active:bg-surface-container-high' %}
+
+<div class="sm:hidden sticky top-16 z-30 -mx-margin bg-background/95 backdrop-blur-xl border-y border-outline-variant/30">
+    <div class="relative">
+        <nav aria-label="{{ title }}" id="letterStrip"
+             class="flex items-center gap-1.5 overflow-x-auto py-2.5 pl-margin pr-[4.5rem] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {% if top_url %}
+            <a href="{{ top_url }}" class="h-9 px-3 shrink-0 rounded-lg border text-[13px] font-semibold flex items-center {{ on_cls if top_on else off_cls }}"{% if top_on %} aria-current="page"{% endif %}>{{ top_label }}</a>
+            {% endif %}
+            {% for group in groups %}
+            {% if not loop.first %}<span aria-hidden="true" class="w-px h-5 bg-outline-variant/60 mx-1 shrink-0"></span>{% endif %}
+            {% for char in group[1] %}
+            {% set on = (active and active|lower == char|lower) %}
+            <a href="{{ url_for(endpoint, letter=(char|lower if lower_urls else char)) }}"
+               class="{{ chip }} {{ on_cls if on else off_cls }}"{% if on %} aria-current="page"{% endif %}>{{ char|upper }}</a>
+            {% endfor %}
+            {% endfor %}
+        </nav>
+        <div aria-hidden="true" class="pointer-events-none absolute inset-y-0 right-0 w-[4.5rem] bg-gradient-to-r from-transparent via-background/95 to-background"></div>
+        <button type="button" onclick="toggleLetterSheet(true)" aria-label="Все символы" aria-controls="letterSheet"
+                class="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-9 rounded-lg border border-outline-variant/50 bg-surface-container text-on-surface flex items-center justify-center">
+            <span class="material-symbols-outlined text-[19px]">grid_view</span>
+        </button>
+    </div>
+</div>
+
+<div id="letterSheet" class="sm:hidden fixed inset-0 z-[70] hidden" role="dialog" aria-modal="true" aria-labelledby="letterSheetTitle">
+    <div class="absolute inset-0 bg-black/60" onclick="toggleLetterSheet(false)"></div>
+    <div class="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto bg-surface-container rounded-t-[20px] border-t border-outline-variant/40 px-4 pt-2.5 pb-[calc(1.75rem+env(safe-area-inset-bottom))]">
+        <div class="w-9 h-1 rounded-full bg-outline-variant mx-auto mb-3.5"></div>
+        <div class="flex items-center justify-between mb-3.5">
+            <span id="letterSheetTitle" class="text-[17px] font-semibold text-on-surface">{{ title }}</span>
+            <button type="button" onclick="toggleLetterSheet(false)" aria-label="Закрыть"
+                    class="w-9 h-9 rounded-lg text-on-surface-variant flex items-center justify-center">
+                <span class="material-symbols-outlined text-[20px]">close</span>
+            </button>
+        </div>
+        {% if top_url %}
+        <a href="{{ top_url }}" class="h-11 rounded-[10px] border text-sm font-semibold flex items-center justify-center {{ on_cls if top_on else 'border-outline-variant/50 text-on-surface' }}">{{ top_label }} по капитализации</a>
+        {% endif %}
+        {% for group in groups %}
+        <div class="mt-4 mb-2 text-xs font-medium text-outline">{{ group[0] }}</div>
+        <div class="grid {{ group[2] }} gap-1.5">
+            {% for char in group[1] %}
+            {% set on = (active and active|lower == char|lower) %}
+            <a href="{{ url_for(endpoint, letter=(char|lower if lower_urls else char)) }}"
+               class="{{ cell }} {{ on_cls if on else off_cls }}"{% if on %} aria-current="page"{% endif %}>{{ char|upper }}</a>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+function toggleLetterSheet(open) {
+    document.getElementById('letterSheet').classList.toggle('hidden', !open);
+    document.body.classList.toggle('overflow-hidden', open);
+}
+document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') toggleLetterSheet(false);
+});
+// Scroll the selected symbol into the visible part of the strip
+(function () {
+    const strip = document.getElementById('letterStrip');
+    const current = strip && strip.querySelector('[aria-current]');
+    if (current) strip.scrollLeft = current.offsetLeft - (strip.clientWidth - current.offsetWidth) / 2;
+})();
+</script>
+{% endmacro %}

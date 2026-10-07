@@ -4,6 +4,7 @@
 {% block title %}{% if is_start %}Акции{% elif is_search %}Поиск: {{ search_query }}{% else %}Акции на «{{ letter }}»{% endif %} · What's the rate{% endblock %}
 
 {% block content %}
+{% from "_letter_filter.html" import mobile_filter %}
 {% set show_portfolio = has_portfolio %}
 {% set grid_cols = 'sm:grid-cols-[minmax(0,1fr)_180px_36px_330px]' if show_portfolio else 'sm:grid-cols-[minmax(0,1fr)_200px_36px]' %}
 {% set chip_base = 'min-w-[36px] h-9 px-2 rounded-lg font-label-ticker text-[13px] font-semibold flex items-center justify-center shrink-0 transition-colors border' %}
@@ -71,7 +72,7 @@
                 <button type="submit" class="h-12 px-6 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-[15px] transition-colors cursor-pointer">Найти</button>
             </form>
 
-            <nav aria-label="Фильтр по первой букве тикера" class="flex flex-wrap items-center gap-1.5">
+            <nav aria-label="Фильтр по первой букве тикера" class="hidden sm:flex flex-wrap items-center gap-1.5">
                 <span class="text-[13px] text-outline mr-1.5">Первая буква тикера</span>
                 {% for char in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' %}
                 {% set on = (letter == char) %}
@@ -80,6 +81,9 @@
                 {% endfor %}
             </nav>
         </section>
+
+        {{ mobile_filter('Первая буква тикера', [('Буквы', 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'grid-cols-6')],
+                         '' if is_search else (letter or ''), 'market.available_stocks_for_letter') }}
 
         {% if is_start %}
         <!-- ================= Start page ================= -->
@@ -100,17 +104,21 @@
                 <span class="sr-only">Обновить цену</span>
             </div>
             {% for row in stocks %}
-            <div class="stock-row grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1fr)_110px_190px_160px_36px] gap-x-4 gap-y-2 items-center px-5 py-3 sm:py-0 sm:min-h-[68px] border-t border-outline-variant/20" data-ticker="{{ row.ticker }}">
-                <div class="flex items-center gap-3 min-w-0 col-span-2 sm:col-span-1">
+            <div class="stock-row grid grid-cols-[minmax(0,1fr)_auto_auto] sm:grid-cols-[minmax(0,1fr)_110px_190px_160px_36px] gap-x-3 sm:gap-x-4 gap-y-1 items-center px-4 sm:px-5 py-3 sm:py-0 sm:min-h-[68px] border-t border-outline-variant/20" data-ticker="{{ row.ticker }}">
+                <div class="flex items-center gap-3 min-w-0">
                     {{ monogram(row) }}
-                    <div class="flex items-baseline gap-2 min-w-0">
-                        <span class="text-[15px] font-semibold text-on-surface truncate">{{ row.title }}</span>
-                        <span class="font-label-ticker text-[13px] font-semibold text-on-surface-variant shrink-0">{{ row.ticker }}</span>
+                    <div class="flex flex-col min-w-0">
+                        <div class="flex items-baseline gap-2 min-w-0">
+                            <span class="text-[15px] font-semibold text-on-surface truncate">{{ row.title }}</span>
+                            <span class="font-label-ticker text-[13px] font-semibold text-on-surface-variant shrink-0">{{ row.ticker }}</span>
+                        </div>
+                        <span class="sm:hidden mt-0.5 font-label-ticker text-xs text-on-surface-variant">{{ row.held_str }} шт.</span>
                     </div>
                 </div>
-                <span class="sm:text-right font-label-ticker text-sm text-on-surface-variant">{{ row.held_str }} шт.</span>
-                <div class="price-cell flex flex-col items-end gap-0.5">{{ price_cell(row) }}</div>
-                <div class="value-cell hidden sm:flex flex-col items-end">{{ value_cell(row) }}</div>
+                <span class="hidden sm:block text-right font-label-ticker text-sm text-on-surface-variant">{{ row.held_str }} шт.</span>
+                <!-- Phones: price and its age on a separate line under the company -->
+                <div class="price-cell col-span-3 row-start-2 sm:col-span-1 sm:row-start-auto pl-[52px] sm:pl-0 flex flex-row flex-wrap items-baseline gap-x-2 sm:flex-col sm:items-end gap-y-0.5">{{ price_cell(row) }}</div>
+                <div class="value-cell flex flex-col items-end">{{ value_cell(row) }}</div>
                 <div class="flex justify-end">{{ refresh_button(row, auto=True) }}</div>
             </div>
             {% endfor %}
@@ -162,7 +170,7 @@
 
             <div class="flex flex-col">
                 {% for row in stocks %}
-                <div class="stock-row grid grid-cols-[minmax(0,1fr)_auto_auto] {{ grid_cols }} gap-x-4 gap-y-2 items-center px-5 py-3 sm:py-0 sm:min-h-[68px] border-t border-outline-variant/20 hover:bg-surface-container-high/60 transition-colors" data-ticker="{{ row.ticker }}">
+                <div class="stock-row grid grid-cols-[minmax(0,1fr)_auto_auto] {{ grid_cols }} gap-x-2 sm:gap-x-4 gap-y-1 items-center px-4 sm:px-5 py-3 sm:py-0 sm:min-h-[68px] border-t border-outline-variant/20 hover:bg-surface-container-high/60 transition-colors" data-ticker="{{ row.ticker }}">
                     <!-- Company -->
                     <div class="flex items-center gap-3 min-w-0">
                         {{ monogram(row) }}
@@ -172,23 +180,27 @@
                                 <span class="font-label-ticker text-[13px] font-semibold text-on-surface-variant shrink-0">{{ row.ticker }}</span>
                             </div>
                             {% if row.type_label %}
-                            <div class="flex items-center gap-1.5 mt-0.5">
+                            <div class="flex items-center gap-1.5 mt-0.5 min-w-0">
                                 <span class="text-xs text-outline truncate">{{ row.type_label }}</span>
                                 {% if row.is_etf %}<span class="h-[18px] px-1.5 inline-flex items-center rounded bg-secondary/10 text-secondary font-label-ticker text-[11px] font-semibold">ETF</span>{% endif %}
                             </div>
+                            {% endif %}
+                            {% if show_portfolio %}
+                            <!-- Phones: the held amount is shown under the name instead of the green badge -->
+                            <span class="held-sub {% if not row.held %}hidden {% endif %}sm:!hidden mt-0.5 font-label-ticker text-xs text-emerald-400"><span class="held-qty-sub">{{ row.held_str }}</span> шт. в портфеле</span>
                             {% endif %}
                         </div>
                     </div>
 
                     <!-- Price -->
-                    <div class="price-cell flex flex-col items-end gap-0.5">{{ price_cell(row) }}</div>
+                    <div class="price-cell col-span-3 row-start-2 sm:col-span-1 sm:row-start-auto pl-[52px] sm:pl-0 flex flex-row flex-wrap items-baseline gap-x-2 sm:flex-col sm:items-end gap-y-0.5">{{ price_cell(row) }}</div>
 
                     <!-- Refresh -->
                     <div class="flex justify-end">{{ refresh_button(row) }}</div>
 
                     <!-- Portfolio -->
                     {% if show_portfolio %}
-                    <div class="portfolio-action-container col-span-3 sm:col-span-1 flex items-center justify-end gap-2"
+                    <div class="portfolio-action-container flex items-center justify-end gap-2"
                          data-ticker="{{ row.ticker }}" data-price="{{ row.price_num }}" data-held="{{ row.held }}">
 
                         <div class="input-mode hidden items-center gap-2">
@@ -213,18 +225,18 @@
                         <button type="button" onclick="toggleAddMode(this, true, 'add')"
                                 {% if stocks_full and not row.held %}disabled{% endif %}
                                 title="{{ 'В портфеле может быть не больше 5 акций' if stocks_full else 'Добавить ' ~ row.ticker ~ ' в портфель' }}"
-                                class="default-mode {% if row.held %}hidden{% else %}flex{% endif %} h-9 px-3 rounded-lg bg-transparent enabled:hover:bg-surface-container-high border border-outline-variant/50 enabled:hover:border-outline text-on-surface text-sm font-medium transition-colors items-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">
+                                class="default-mode {% if row.held %}hidden{% else %}flex{% endif %} h-9 w-9 sm:w-auto justify-center sm:justify-start sm:px-3 rounded-lg bg-transparent enabled:hover:bg-surface-container-high border border-outline-variant/50 enabled:hover:border-outline text-on-surface text-sm font-medium transition-colors items-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">
                             <span class="material-symbols-outlined text-[17px]">add</span>
-                            <span>В портфель</span>
+                            <span class="hidden sm:inline">В портфель</span>
                         </button>
 
                         <div class="held-mode {% if row.held %}flex{% else %}hidden{% endif %} items-center gap-2">
-                            <span class="h-8 px-3 flex items-center gap-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[13px] font-medium whitespace-nowrap">
+                            <span class="h-8 px-3 hidden sm:flex items-center gap-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[13px] font-medium whitespace-nowrap">
                                 <span class="material-symbols-outlined text-[16px]">check</span>
                                 <span class="font-label-ticker"><span class="held-qty">{{ row.held_str }}</span> шт.</span>
                             </span>
                             <button type="button" onclick="toggleAddMode(this, true, 'set')" aria-label="Изменить количество {{ row.ticker }}"
-                                    class="h-9 w-9 rounded-lg border border-outline-variant/50 text-outline hover:text-on-surface hover:bg-surface-container-high flex items-center justify-center transition-colors cursor-pointer">
+                                    class="h-9 w-9 rounded-lg border border-outline-variant/50 text-outline hover:text-on-surface hover:bg-surface-container-high flex items-center justify-center transition-colors cursor-pointer max-sm:bg-emerald-500/10 max-sm:border-emerald-500/35 max-sm:text-emerald-400">
                                 <span class="material-symbols-outlined text-[17px]">edit</span>
                             </button>
                         </div>
@@ -272,6 +284,13 @@
 
     </div>
 </div>
+
+<style>
+    /* Phones: while entering a quantity the editor takes its own line under the stock */
+    @media (max-width: 639px) {
+        .portfolio-action-container.editing { grid-column: 1 / -1; grid-row: 3; }
+    }
+</style>
 
 <script>
 const CURRENCY_SIGN = {{ currency_sign|tojson }};
@@ -381,6 +400,7 @@ function updateEstimate(input) {
 
 function restoreIdle(container) {
     const held = parseFloat(container.dataset.held) || 0;
+    container.classList.remove('editing');
     showEl(container.querySelector('.input-mode'), false);
     showEl(container.querySelector('.error-badge'), false);
     showEl(container.querySelector('.default-mode'), held <= 0);
@@ -397,6 +417,7 @@ function toggleAddMode(triggerEl, showInput, mode) {
     });
 
     container.dataset.mode = mode || 'add';
+    container.classList.add('editing');
     showEl(container.querySelector('.default-mode'), false);
     showEl(container.querySelector('.held-mode'), false);
     showEl(container.querySelector('.input-mode'), true);
@@ -447,6 +468,11 @@ async function confirmQuantity(el) {
         if (data.success) {
             container.dataset.held = parseFloat(data.quantity) || 0;
             container.querySelector('.held-qty').textContent = data.quantity_str;
+            const heldSub = container.parentElement.querySelector('.held-sub');
+            if (heldSub) {
+                heldSub.querySelector('.held-qty-sub').textContent = data.quantity_str;
+                heldSub.classList.toggle('hidden', !(parseFloat(data.quantity) > 0));
+            }
             restoreIdle(container);
         } else if (data.reason === 'limit') {
             restoreIdle(container);

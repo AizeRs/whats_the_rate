@@ -2,7 +2,7 @@
 <html class="dark" lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>{% block title %}What's the rate{% endblock %}</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/favicon.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -115,7 +115,7 @@
       }
     </style>
 </head>
-<body class="bg-background font-body-md text-body-md text-on-surface min-h-screen flex flex-col selection:bg-primary selection:text-on-primary">
+<body class="bg-background font-body-md text-body-md text-on-surface min-h-screen flex flex-col pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0selection:bg-primary selection:text-on-primary">
     <!-- Header / Top Navbar -->
     <header class="sticky top-0 w-full z-50 shrink-0 bg-surface-container-lowest/80 backdrop-blur-xl border-b border-outline-variant/20 shadow-[0_1px_8px_rgba(0,0,0,0.2)]">
         <div class="h-16 max-w-7xl mx-auto px-margin flex items-center justify-between gap-space-lg">
@@ -140,7 +140,7 @@
             <!-- Auth / Profile Link -->
             <div class="flex items-center gap-space-sm">
                 {% if current_user.is_authenticated %}
-                <div class="hidden sm:flex items-center gap-space-xs px-space-sm py-space-xs rounded-lg bg-surface-container text-on-surface-variant">
+                <div class="flex items-center gap-space-xs px-space-sm py-space-xs rounded-lg bg-surface-container text-on-surface-variant">
                     <span class="font-label-ticker text-label-ticker text-on-surface">{{ current_user.main_currency }}</span>
                 </div>
                 <a href="{{ url_for('main.user') }}" class="flex items-center gap-2 text-on-surface-variant hover:text-on-surface font-body-md text-body-md px-space-sm py-space-xs rounded-lg hover:bg-surface-container transition-colors">
@@ -174,5 +174,29 @@
             </div>
         </div>
     </footer>
+
+    <!-- Bottom tab bar: phones and small tablets (the top navigation is hidden there) -->
+    {% set ep = request.endpoint or '' %}
+    {% set tabs = [] %}
+    {% if current_user.is_authenticated and current_user.portfolio_id %}
+    {% set _ = tabs.append(('Портфель', 'pie_chart', url_for('portfolio.portfolios_username', username=current_user.username),
+                            ep.startswith('portfolio.') and (request.view_args or {}).get('username') == current_user.username)) %}
+    {% endif %}
+    {% set _ = tabs.append(('Крипта', 'currency_bitcoin', url_for('market.crypto'), 'crypto' in ep)) %}
+    {% set _ = tabs.append(('Акции', 'bar_chart', url_for('market.stocks'), 'stocks' in ep)) %}
+    {% set _ = tabs.append(('Валюты', 'payments', url_for('market.fiat'), 'fiat' in ep)) %}
+    <nav aria-label="Разделы" class="md:hidden fixed inset-x-0 bottom-0 z-50 bg-surface-container-lowest/95 backdrop-blur-xl border-t border-outline-variant/30 pb-[env(safe-area-inset-bottom)]">
+        <div class="h-16 flex">
+            {% for label, icon, href, active in tabs %}
+            <a href="{{ href }}" {% if active %}aria-current="page"{% endif %}
+               class="flex-1 flex flex-col items-center justify-center gap-[3px] text-[11px] font-medium {{ 'text-primary' if active else 'text-outline' }}">
+                <span class="w-14 h-7 rounded-full flex items-center justify-center {{ 'bg-blue-500/20' if active else '' }}">
+                    <span class="material-symbols-outlined text-[22px]"{% if active %} style="font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;"{% endif %}>{{ icon }}</span>
+                </span>
+                {{ label }}
+            </a>
+            {% endfor %}
+        </div>
+    </nav>
 </body>
 </html>
