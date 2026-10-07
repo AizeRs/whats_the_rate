@@ -33,10 +33,11 @@ def update_crypto_db():
 
 def update_currencies_db(main_symbols_dict):
     """Updates the database with the latest fiat currency prices."""
-    success, names, prices = fetch_fiat_data()
+    success, names, prices, previous_prices, rate_date = fetch_fiat_data()
     if not success:
         return False
     try:
+        now = datetime.now()
         session = create_session()
         for currency, name in names.items():
             if currency in prices:
@@ -46,6 +47,11 @@ def update_currencies_db(main_symbols_dict):
                     fiat = FiatRate(symbol=currency, name=name)
                     session.add(fiat)
                 fiat.price = rate
+                # Rates are units per 1 USD, so the USD price of one unit changes by previous / current
+                previous = previous_prices.get(currency)
+                fiat.change_pct = (float(previous) / float(prices[currency]) - 1) * 100 if previous else None
+                fiat.rate_date = rate_date
+                fiat.updated_at = now
                 if currency in main_symbols_dict:
                     main_symbols_dict[currency] = (main_symbols_dict[currency][0], rate)
         session.commit()
@@ -188,26 +194,16 @@ def get_crypto_by_letter(letter):
         print(e)
     return cryptos
 
-def get_fiat_by_letter(letter, main_symbols_keys=None):
-    """Returns a list of fiats matching a given filter."""
-    fiats = []
+def get_all_fiats():
+    """Returns all fiat currencies."""
     try:
         session = create_session()
-        query = session.query(FiatRate).filter(FiatRate.symbol != 'BTC')
-        
-        if letter.isupper():
-            query = query.filter(FiatRate.symbol.startswith(letter))
-        elif letter == 'main' and main_symbols_keys:
-            query = query.filter(FiatRate.symbol.in_(main_symbols_keys))
-        elif letter != 'main' and not letter.isupper() and letter != 'all':
-            query = query.filter(FiatRate.name.startswith(letter))
-            
-        results = query.all()
-        for r in results:
-            fiats.append({'symbol': r.symbol, 'name': r.name, 'price': str(r.price) if r.price is not None else "No price data"})
+        results = session.query(FiatRate).all()
+        return [{'code': r.symbol, 'name': r.name, 'price': r.price, 'change_pct': r.change_pct,
+                 'rate_date': r.rate_date, 'updated_at': r.updated_at} for r in results]
     except Exception as e:
         print(e)
-    return fiats
+        return []
 
 def get_all_assets_dict():
     """Reads all assets into dictionaries for fast lookup."""

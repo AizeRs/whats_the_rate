@@ -1,5 +1,8 @@
+from datetime import date, timedelta
 from app.constants import FINNHUB_APIKEY
 import requests
+
+FRANKFURTER_URL = 'https://api.frankfurter.app'
 
 def ticker_price(ticker):
     """Fetches the current price and full quote for a given stock ticker."""
@@ -64,14 +67,26 @@ def fetch_crypto_data():
         return False, []
 
 def fetch_fiat_data():
-    """Fetches fiat data from Frankfurter."""
-    names = requests.get('https://api.frankfurter.app/currencies').json()
-    prices_resp = requests.get('https://api.frankfurter.app/latest?from=USD').json()
-    prices = prices_resp.get('rates', {})
-    prices['USD'] = 1.0  # Base currency
-    if not (names and prices):
-        return False, {}, {}
-    return True, names, prices
+    """Fetches currency names and the two latest ECB fixings (units per 1 USD) from Frankfurter.
+
+    Returns (success, names, rates, previous_rates, rate_date).
+    """
+    try:
+        names = requests.get(f'{FRANKFURTER_URL}/currencies', timeout=10).json()
+        latest = requests.get(f'{FRANKFURTER_URL}/latest', params={'from': 'USD'}, timeout=10).json()
+        rate_date = date.fromisoformat(latest['date'])
+        # For a weekend/holiday Frankfurter returns the closest earlier fixing, i.e. the previous one
+        day_before = (rate_date - timedelta(days=1)).isoformat()
+        previous = requests.get(f'{FRANKFURTER_URL}/{day_before}', params={'from': 'USD'}, timeout=10).json()
+    except Exception as e:
+        print(f"Error fetching fiat data from Frankfurter: {e}")
+        return False, {}, {}, {}, None
+    rates = latest.get('rates', {})
+    previous_rates = previous.get('rates', {})
+    rates['USD'] = previous_rates['USD'] = 1.0  # Base currency
+    if not (names and rates):
+        return False, {}, {}, {}, None
+    return True, names, rates, previous_rates, rate_date
 
 def fetch_tickers_data():
     """Fetches list of all US tickers from Finnhub."""

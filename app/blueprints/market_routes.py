@@ -1,13 +1,12 @@
 from datetime import datetime, timedelta
 from flask import Blueprint, render_template, redirect, request, url_for, jsonify, get_template_attribute
 from flask_login import current_user
-from app.forms import SearchTickerForm, ReloadDataForm
 from app.models import db_session
 from app.models.portfolios import Portfolio
 from app.services.symbols import MAIN_SYMBOLS
 from app.services.data_service import (
     update_tickers_db, update_crypto_db, update_currencies_db,
-    get_stocks_by_letter, get_stocks_by_tickers, get_crypto_by_letter, get_crypto_updated_at, get_fiat_by_letter,
+    get_stocks_by_letter, get_stocks_by_tickers, get_crypto_by_letter, get_crypto_updated_at, get_all_fiats,
     save_ticker_price
 )
 from app.services.api_client import fetch_quote
@@ -205,27 +204,31 @@ def _stocks_ajax_response():
         return jsonify({'success': status == 'ok', 'status': status, 'price_num': row['price_num'],
                         'price_html': price_html, 'value_html': value_html})
 
-    # Add to the portfolio (quantity is added to what is already there) or set an exact quantity
-    add_ticker, set_ticker = data.get('add_stock'), data.get('set_stock')
-    if add_ticker or set_ticker:
-        ticker = str(add_ticker or set_ticker)
-        try:
-            qty = float(str(data.get('quantity', '')).replace(',', '.'))
-        except (ValueError, TypeError):
-            qty = None
-        if add_ticker and (qty is None or qty <= 0):
-            qty = 1.0
-        result = 'error'
-        if current_user.is_authenticated and current_user.portfolio_id is not None and qty is not None and qty >= 0:
-            if add_ticker:
-                qty += float(_portfolio_assets('stocks').get(ticker, 0) or 0)
-            result = _set_asset_quantity('stocks', ticker, qty)
-        holdings = _portfolio_assets('stocks')
-        quantity = holdings.get(ticker, 0)
-        return jsonify({'success': result == 'ok', 'reason': result, 'ticker': ticker,
-                        'quantity': quantity, 'quantity_str': _fmt_number_ru(quantity),
-                        'stocks_count': len(holdings)})
+    # Add to the portfolio or set an exact quantity
+    if data.get('add_stock') or data.get('set_stock'):
+        return _portfolio_quantity_response('stocks', data.get('add_stock'), data.get('set_stock'), data)
     return None
+
+
+def _portfolio_quantity_response(kind, add_ticker, set_ticker, data):
+    """AJAX: adds a quantity to an asset in the portfolio (add_ticker) or sets it exactly (set_ticker)."""
+    ticker = str(add_ticker or set_ticker)
+    try:
+        qty = float(str(data.get('quantity', '')).replace(' ', '').replace(',', '.'))
+    except (ValueError, TypeError):
+        qty = None
+    if add_ticker and (qty is None or qty <= 0):
+        qty = 1.0
+    result = 'error'
+    if current_user.is_authenticated and current_user.portfolio_id is not None and qty is not None and qty >= 0:
+        if add_ticker:
+            qty += float(_portfolio_assets(kind).get(ticker, 0) or 0)
+        result = _set_asset_quantity(kind, ticker, qty)
+    holdings = _portfolio_assets(kind)
+    quantity = holdings.get(ticker, 0)
+    return jsonify({'success': result == 'ok', 'reason': result, 'ticker': ticker,
+                    'quantity': quantity, 'quantity_str': _fmt_number_ru(quantity),
+                    'stocks_count': len(holdings)})
 
 
 def _stocks_common_params():
@@ -482,46 +485,135 @@ def available_crypto_for_letter(letter='#'):
     return render_template('available_crypto_for_letter.html', **param)
 
 
+# --- Fiat currencies ---------------------------------------------------------
+
+# ECB publishes rates once per working day; reload on page open if ours are older than this
+FIAT_AUTO_REFRESH_AFTER = timedelta(hours=1)
+_FIAT_AUTO_RETRY_AFTER = timedelta(minutes=1)
+_fiat_last_auto_attempt = None
+
+# The currencies users can display prices in go first
+_FIAT_FIRST = ['USD', 'EUR', 'GBP', 'JPY', 'CHF']
+
+# Russian name and sign for the currencies the ECB publishes
+_FIAT_INFO = {
+    'USD': ('Доллар США', '$'), 'EUR': ('Евро', '€'), 'GBP': ('Британский фунт', '£'),
+    'JPY': ('Японская иена', '¥'), 'CHF': ('Швейцарский франк', '₣'), 'AUD': ('Австралийский доллар', 'A$'),
+    'BGN': ('Болгарский лев', 'лв'), 'BRL': ('Бразильский реал', 'R$'), 'CAD': ('Канадский доллар', 'C$'),
+    'CNY': ('Китайский юань', '¥'), 'CZK': ('Чешская крона', 'Kč'), 'DKK': ('Датская крона', 'kr'),
+    'HKD': ('Гонконгский доллар', 'HK$'), 'HUF': ('Венгерский форинт', 'Ft'), 'IDR': ('Индонезийская рупия', 'Rp'),
+    'ILS': ('Израильский шекель', '₪'), 'INR': ('Индийская рупия', '₹'), 'ISK': ('Исландская крона', 'kr'),
+    'KRW': ('Южнокорейская вона', '₩'), 'MXN': ('Мексиканское песо', '$'), 'MYR': ('Малайзийский ринггит', 'RM'),
+    'NOK': ('Норвежская крона', 'kr'), 'NZD': ('Новозеландский доллар', 'NZ$'), 'PHP': ('Филиппинское песо', '₱'),
+    'PLN': ('Польский злотый', 'zł'), 'RON': ('Румынский лей', 'lei'), 'RUB': ('Российский рубль', '₽'),
+    'SEK': ('Шведская крона', 'kr'), 'SGD': ('Сингапурский доллар', 'S$'), 'THB': ('Тайский бат', '฿'),
+    'TRY': ('Турецкая лира', '₺'), 'ZAR': ('Южноафриканский рэнд', 'R'),
+}
+
+_MONTHS_GENITIVE = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа',
+                    'сентября', 'октября', 'ноября', 'декабря']
+
+
+def _fiat_unit(price):
+    """Small currencies are quoted per 100 / 1000 / 10 000 units, like banks do."""
+    if price >= 0.01:
+        return 1
+    unit = 100
+    while price * unit < 0.1:
+        unit *= 10
+    return unit
+
+
+def _fmt_fiat_price(value, sign):
+    num = f"{value:,.{2 if value >= 1 else 4}f}".replace(',', '\u202f').replace('.', ',')
+    return f"{num}\u00a0{sign}"
+
+
+def _fiat_rows(fiats, holdings):
+    code, sign, _ = _user_currency()
+    by_code = {f['code']: f for f in fiats}
+    base = by_code.get(code)
+    base_price = base['price'] if base and base['price'] else (MAIN_SYMBOLS[code][1] or 1.0)
+    base_change = (base['change_pct'] or 0) if base else 0
+
+    def order(f):
+        return (_FIAT_FIRST.index(f['code']) if f['code'] in _FIAT_FIRST else len(_FIAT_FIRST), f['code'])
+
+    rows = []
+    for f in sorted(fiats, key=order):
+        if not f['price']:
+            continue
+        ru, fiat_sign = _FIAT_INFO.get(f['code'], (f['name'], f['code']))
+        price = f['price'] / base_price
+        unit = _fiat_unit(price)
+        change = None
+        if f['change_pct'] is not None:
+            # Change in the user's currency: both prices moved against USD
+            change = ((1 + f['change_pct'] / 100) / (1 + base_change / 100) - 1) * 100
+        held = holdings.get(f['code'], 0) or 0
+        rows.append({
+            'code': f['code'],
+            'title': ru,
+            'name': f['name'],
+            'sign': fiat_sign,
+            'hue': _ticker_hue(f['code']),
+            'is_base': f['code'] == code,
+            'price_num': price,
+            'price_str': _fmt_fiat_price(price * unit, sign),
+            'unit': unit,
+            'unit_str': f"{_fmt_number_ru(unit)} {f['code']}",
+            'change_str': _fmt_change(change) if change is not None and abs(change) >= 0.005 else ('0,00%' if change is not None else ''),
+            'change_up': change is not None and change > 0,
+            'change_down': change is not None and change < 0,
+            'held': held,
+            'held_str': _fmt_number_ru(held, 2) if held else '',
+            'search': ' '.join([f['code'], ru, f['name'] or '']).lower(),
+        })
+    return rows
+
+
 @market_bp.route('/fiat', methods=['GET', 'POST'])
 def fiat():
-    """Renders the main fiat currencies market page."""
-    form = SearchTickerForm()
-    form2 = ReloadDataForm()
+    """All fiat currencies on one page (the ECB publishes about 30)."""
+    global _fiat_last_auto_attempt
+
+    if request.method == 'POST':
+        data = request.get_json(silent=True) or request.form
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json
+        if data.get('reload_fiat'):
+            success = update_currencies_db(MAIN_SYMBOLS)
+            if is_ajax:
+                return jsonify({'success': bool(success)})
+            return redirect(url_for('market.fiat', reload='1' if success else '2'))
+        if data.get('add_fiat') or data.get('set_fiat'):
+            return _portfolio_quantity_response('fiat', data.get('add_fiat'), data.get('set_fiat'), data)
+
+    code, sign, _ = _user_currency()
+    fiats = get_all_fiats()
+    reload_arg = request.args.get('reload')
+    rate_date = max((f['rate_date'] for f in fiats if f['rate_date']), default=None)
+    updated_at = max((f['updated_at'] for f in fiats if f['updated_at']), default=None)
+
+    now = datetime.now()
+    is_stale = not updated_at or now - updated_at > FIAT_AUTO_REFRESH_AFTER
+    recently_tried = _fiat_last_auto_attempt and now - _fiat_last_auto_attempt < _FIAT_AUTO_RETRY_AFTER
+    auto_refresh = bool(is_stale and not recently_tried)
+    if auto_refresh:
+        _fiat_last_auto_attempt = now
+
     param = {
-        'form': form,
-        'form2': form2
+        'fiats': _fiat_rows(fiats, _portfolio_assets('fiat')),
+        'currency_code': code,
+        'currency_sign': sign,
+        'has_portfolio': current_user.is_authenticated and current_user.portfolio_id is not None,
+        'rate_date': f'{rate_date.day} {_MONTHS_GENITIVE[rate_date.month - 1]} {rate_date.year}' if rate_date else None,
+        'reload': int(reload_arg) if reload_arg in ('1', '2') else None,
+        'auto_refresh': auto_refresh,
     }
-
-    if form.submit1.data:
-        if 'all' not in form.ticker.data and 'main' not in form.ticker.data:
-            return redirect(f'fiat/{form.ticker.data}')
-    if form2.submit2.data:
-        if update_currencies_db(MAIN_SYMBOLS):
-            param['reload'] = 1
-        else:
-            param['reload'] = 2
-
     return render_template('available_fiat.html', **param)
 
 
 @market_bp.route('/fiat/<string:letter>', methods=['GET', 'POST'])
 def available_fiat_for_letter(letter):
-    """Renders fiat currencies filtered by their starting letter."""
-    param = {'letter': letter.upper(), 'fiats': []}
-    
-    if current_user.is_authenticated:
-        main_symbol = current_user.main_currency
-        main_rate = MAIN_SYMBOLS[main_symbol][1]
-    else:
-        main_symbol = 'USD'
-        main_rate = 1.0
-
-    raw_fiats = get_fiat_by_letter(letter, MAIN_SYMBOLS.keys())
-    for fiat in raw_fiats:
-        price_val = f"{format_price(float(fiat['price']) / main_rate)}{MAIN_SYMBOLS[main_symbol][0]}"
-        param['fiats'].append({'symbol': fiat['symbol'], 'name': fiat['name'], 'price': price_val})
-
-    if request.method == 'POST':
-        handle_add_asset('add_fiat', 'fiat', param)
-
-    return render_template('available_fiat_for_letter.html', **param)
+    """Old per-letter pages: everything is on /fiat now."""
+    return redirect(url_for('market.fiat'), code=301)

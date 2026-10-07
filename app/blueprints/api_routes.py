@@ -41,7 +41,7 @@ def portfolio_price():
             return jsonify({'Error': 'Invalid apikey'}), 401
             
         if base_currency == 'user':
-            pref_symbol = MAIN_SYMBOLS[user.main_currency]
+            pref_symbol = MAIN_SYMBOLS.get(user.main_currency, MAIN_SYMBOLS['USD'])
             
         if not user.portfolio_id:
             return jsonify({'Error': 'User has no portfolio'}), 404

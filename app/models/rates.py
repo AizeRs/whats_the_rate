@@ -32,4 +32,7 @@ class FiatRate(SqlAlchemyBase):
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
     symbol = sqlalchemy.Column(sqlalchemy.String, unique=True, index=True)
     name = sqlalchemy.Column(sqlalchemy.String)
-    price = sqlalchemy.Column(sqlalchemy.Float, nullable=True)
+    price = sqlalchemy.Column(sqlalchemy.Float, nullable=True)  # USD per 1 unit
+    change_pct = sqlalchemy.Column(sqlalchemy.Float, nullable=True)  # Change vs the previous ECB fixing, % (in USD)
+    rate_date = sqlalchemy.Column(sqlalchemy.Date, nullable=True)  # Date of the ECB fixing
+    updated_at = sqlalchemy.Column(sqlalchemy.DateTime, nullable=True)  # When we loaded the rates

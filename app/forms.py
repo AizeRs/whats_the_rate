@@ -22,17 +22,6 @@ class RegisterForm(FlaskForm):
     submit = SubmitField('Зарегистрироваться')
 
 
-class SearchTickerForm(FlaskForm):
-    """Form for searching financial tickers."""
-    ticker = StringField('Тикер или его начало')
-    submit1 = SubmitField('Найти')
-
-
-class ReloadDataForm(FlaskForm):
-    """Form to trigger data reloading/refreshing."""
-    submit2 = SubmitField('Обновить')
-
-
 class ChangePassForm(FlaskForm):
     """Form for changing user password."""
     old_password = PasswordField('Старый пароль', validators=[DataRequired()])

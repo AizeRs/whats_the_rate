@@ -3,6 +3,7 @@ from flask_login import LoginManager
 from app.constants import SECRET_KEY
 from app.models import db_session
 from app.models.users import User
+from app.services.symbols import MAIN_SYMBOLS
 
 login_manager = LoginManager()
 
@@ -10,7 +11,12 @@ login_manager = LoginManager()
 def load_user(user_id):
     """Loads a user from the database by their ID."""
     with db_session.create_session() as db_sess:
-        return db_sess.query(User).get(user_id)
+        user = db_sess.query(User).get(user_id)
+        if user and user.main_currency not in MAIN_SYMBOLS:
+            # E.g. BTC, which is no longer offered as a display currency
+            user.main_currency = 'USD'
+            db_sess.commit()
+        return user
 
 def create_app():
     """Creates and configures the Flask application instance."""
