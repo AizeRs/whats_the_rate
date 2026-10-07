@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import current_user, login_required
-from app.forms import ChangePassForm, CreatePortfolio
+from app.forms import ChangePassForm, CreatePortfolio, PortfolioVisibility
 from app.models import db_session
 from app.models.users import User
 from app.models.portfolios import Portfolio
@@ -34,7 +34,22 @@ def user():
         flag = True
     else:
         param['user_portfolio_link'] = url_for('portfolio.portfolios_username', username=current_user.username)
+        param['visibility_form'] = visibility_form = PortfolioVisibility()
         flag = False
+
+        # Switch an existing portfolio between private and public
+        if request.method == 'POST' and (visibility_form.make_private.data or visibility_form.make_public.data):
+            if visibility_form.validate():
+                with db_session.create_session() as db_sess:
+                    pf = db_sess.query(Portfolio).filter(Portfolio.id == current_user.portfolio_id).first()
+                    if pf:
+                        pf.isprivate = bool(visibility_form.make_private.data)
+                        db_sess.commit()
+            return redirect(url_for('main.user'))
+
+        with db_session.create_session() as db_sess:
+            pf = db_sess.query(Portfolio).filter(Portfolio.id == current_user.portfolio_id).first()
+            param['portfolio_private'] = bool(pf and pf.isprivate)
 
     if request.method == 'POST':
         with db_session.create_session() as db_sess:

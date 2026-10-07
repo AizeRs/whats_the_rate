@@ -160,6 +160,23 @@ def get_crypto_updated_at():
         print(e)
         return None
 
+def get_crypto_by_symbols(symbols):
+    """Returns {SYMBOL: crypto} for the given tickers. Tickers aren't unique on CoinGecko,
+    so for each one the coin with the biggest market cap (lowest id) is taken."""
+    found = {}
+    if not symbols:
+        return found
+    try:
+        session = create_session()
+        results = session.query(CryptoRate).filter(CryptoRate.symbol.in_(list(symbols))) \
+            .order_by(CryptoRate.id.asc()).all()
+        for r in results:
+            found.setdefault(r.symbol, {'symbol': r.symbol, 'name': r.coin_id, 'title': r.name,
+                                        'price': r.price, 'updated_at': r.price_updated_at})
+    except Exception as e:
+        print(e)
+    return found
+
 def get_crypto_by_letter(letter):
     """Returns a list of cryptos starting with a given letter, matching search query, or top-50 (#)."""
     cryptos = []

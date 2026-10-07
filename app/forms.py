@@ -40,3 +40,9 @@ class CreatePortfolio(FlaskForm):
     """Form for creating a new portfolio."""
     submit_private = SubmitField('Создать приватный портфель только для Вас')
     submit_public = SubmitField('Создать публичный портфель с доступом по ссылке')
+
+
+class PortfolioVisibility(FlaskForm):
+    """Form for switching an existing portfolio between private and public."""
+    make_private = SubmitField('Приватный')
+    make_public = SubmitField('Публичный')

@@ -10,7 +10,10 @@ from app.services.data_service import (
     save_ticker_price
 )
 from app.services.api_client import fetch_quote
-from app.utils import format_price
+from app.formatting import fmt_number_ru, fmt_money_ru, ticker_hue, user_currency, MONTHS_GENITIVE
+from app.presenters import (
+    stock_row, fiat_rows, MAX_STOCKS_IN_PORTFOLIO, CRYPTO_AUTO_REFRESH_AFTER, FIAT_AUTO_REFRESH_AFTER
+)
 
 market_bp = Blueprint('market', __name__)
 
@@ -58,116 +61,6 @@ def handle_add_asset(request_form_key, asset_type, param):
 # --- Stocks -----------------------------------------------------------------
 
 STOCKS_PER_PAGE = 50
-MAX_STOCKS_IN_PORTFOLIO = 5  # Enforced by Portfolio.set_in_dict
-AUTO_REFRESH_AFTER = timedelta(minutes=15)  # /stocks refreshes the user's own stocks older than this
-
-_STOCK_TYPES = {
-    'Common Stock': 'Обыкновенные акции',
-    'ETP': 'Биржевой фонд',
-    'ADR': 'Депозитарные расписки (ADR)',
-    'GDR': 'Депозитарные расписки (GDR)',
-    'REIT': 'Фонд недвижимости (REIT)',
-    'Preference': 'Привилегированные акции',
-    'Closed-End Fund': 'Закрытый фонд',
-    'Open-End Fund': 'Открытый фонд',
-    'Equity WRT': 'Варрант',
-    'Right': 'Права на акции',
-    'Unit': 'Юниты',
-    'MLP': 'Партнёрство (MLP)',
-}
-
-# Words kept as-is when prettifying Finnhub's UPPERCASE company names
-_NAME_ACRONYMS = {'ETF', 'ETN', 'ADR', 'REIT', 'USA', 'US', 'U.S.', 'UK', 'S&P', 'NV', 'SA', 'AG', 'SE', 'LP',
-                  'LLC', 'II', 'III', 'IV', 'NYSE', 'ESG', 'AI', 'MSCI', 'FTSE', 'SPDR', 'TR', 'PLC'}
-_NAME_FIXES = {'PLC': 'Plc', 'CL': 'Class', 'CLASS': 'Class', 'ISHARES': 'iShares', 'JPMORGAN': 'JPMorgan'}
-
-
-def _pretty_company_name(name):
-    """'AIRBNB INC-CLASS A' -> 'Airbnb Inc — Class A'. Leaves already mixed-case names untouched."""
-    if not name or name != name.upper():
-        return name or ''
-    name = name.replace('-CL ', ' — Class ').replace('-CLASS ', ' — Class ')
-    words = []
-    for word in name.split():
-        if word in _NAME_FIXES:
-            words.append(_NAME_FIXES[word])
-        elif word in _NAME_ACRONYMS or any(ch.isdigit() for ch in word) \
-                or (len(word) <= 3 and not any(v in word for v in 'AEIOUY')):
-            words.append(word)
-        else:
-            words.append('-'.join(part[:1] + part[1:].lower() for part in word.split('-')))
-    return ' '.join(words)
-
-
-def _price_age(updated_at):
-    """How long ago WE saved the price: label + freshness flags for the UI."""
-    if not updated_at:
-        return {'label': '', 'title': '', 'fresh': False, 'very_stale': False}
-    now = datetime.now()
-    diff = now - updated_at
-    day = timedelta(days=1)
-    today = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    if diff < timedelta(minutes=1):
-        label = 'только что'
-    elif updated_at >= today:
-        label = f'сегодня в {updated_at:%H:%M}'
-    elif updated_at >= today - day:
-        label = f'вчера в {updated_at:%H:%M}'
-    elif diff < 30 * day:
-        label = f'обновлено {diff.days} дн. назад'
-    elif diff < 365 * day:
-        label = f'обновлено {diff.days // 30} мес. назад'
-    else:
-        label = 'обновлено больше года назад'
-    return {
-        'label': label,
-        'title': f'Цена сохранена на сайте {updated_at:%d.%m.%Y в %H:%M}. Нажмите ⟳, чтобы обновить',
-        'fresh': diff < day,
-        'very_stale': diff >= 30 * day,
-    }
-
-
-def _fmt_change(pct):
-    if pct is None:
-        return ''
-    num = f'{abs(pct):.2f}'.replace('.', ',')
-    return f'▲ +{num}%' if pct >= 0 else f'▼ −{num}%'
-
-
-def _user_currency():
-    """(code, sign, rate) of the current user's main currency."""
-    code = current_user.main_currency if current_user.is_authenticated else 'USD'
-    sign, rate = MAIN_SYMBOLS[code]
-    return code, sign, (rate or 1.0)
-
-
-_EXCHANGES = {'XNAS': 'NASDAQ', 'XNYS': 'NYSE', 'ARCX': 'NYSE Arca', 'XASE': 'NYSE American',
-              'BATS': 'Cboe', 'OOTC': 'Внебиржевой рынок'}
-
-
-def _stock_row(stock, holdings):
-    """Prepares one stock for the template / AJAX response."""
-    _, sign, rate = _user_currency()
-    price = stock['price'] / rate if stock['price'] is not None else None
-    held = holdings.get(stock['ticker'], 0) or 0
-    stock_type = stock.get('type')
-    return {
-        'ticker': stock['ticker'],
-        'title': _pretty_company_name(stock['name']) or stock['ticker'],
-        'type_label': ' · '.join(filter(None, [_STOCK_TYPES.get(stock_type, stock_type or ''),
-                                               _EXCHANGES.get(stock.get('mic'), stock.get('mic') or '')])),
-        'is_etf': stock_type == 'ETP',
-        'hue': _ticker_hue(stock['ticker']),
-        'price_num': price or 0,
-        'price_str': _fmt_money_ru(price, sign) if price is not None else '',
-        'change_str': _fmt_change(stock.get('change_pct')),
-        'change_up': (stock.get('change_pct') or 0) >= 0,
-        'age': _price_age(stock.get('updated_at')),
-        'needs_refresh': not stock.get('updated_at') or datetime.now() - stock['updated_at'] > AUTO_REFRESH_AFTER,
-        'held': held,
-        'held_str': _fmt_number_ru(held) if held else '',
-        'value_str': _fmt_money_ru(price * held, sign) if price is not None and held else '',
-    }
 
 
 def _render_stock_cells(row):
@@ -199,7 +92,7 @@ def _stocks_ajax_response():
         stock = next(iter(get_stocks_by_tickers([ticker])), None)
         if not stock:
             return jsonify({'success': False, 'status': 'error'})
-        row = _stock_row(stock, _portfolio_assets('stocks'))
+        row = stock_row(stock, _portfolio_assets('stocks'))
         price_html, value_html = _render_stock_cells(row)
         return jsonify({'success': status == 'ok', 'status': status, 'price_num': row['price_num'],
                         'price_html': price_html, 'value_html': value_html})
@@ -227,12 +120,12 @@ def _portfolio_quantity_response(kind, add_ticker, set_ticker, data):
     holdings = _portfolio_assets(kind)
     quantity = holdings.get(ticker, 0)
     return jsonify({'success': result == 'ok', 'reason': result, 'ticker': ticker,
-                    'quantity': quantity, 'quantity_str': _fmt_number_ru(quantity),
+                    'quantity': quantity, 'quantity_str': fmt_number_ru(quantity),
                     'stocks_count': len(holdings)})
 
 
 def _stocks_common_params():
-    code, sign, _ = _user_currency()
+    code, sign, _ = user_currency()
     holdings = _portfolio_assets('stocks')
     reload_arg = request.args.get('reload')
     return holdings, {
@@ -254,7 +147,7 @@ def stocks():
 
     holdings, param = _stocks_common_params()
     param.update({'is_start': True, 'letter': '', 'is_search': False, 'search_query': '',
-                  'stocks': [_stock_row(s, holdings) for s in get_stocks_by_tickers(holdings.keys())]})
+                  'stocks': [stock_row(s, holdings) for s in get_stocks_by_tickers(holdings.keys())]})
     return render_template('available_stocks.html', **param)
 
 
@@ -279,15 +172,13 @@ def available_stocks_for_letter(letter):
         'search_query': query if is_search else '',
         'page': page,
         'has_next': has_next,
-        'stocks': [_stock_row(s, holdings) for s in raw_stocks],
+        'stocks': [stock_row(s, holdings) for s in raw_stocks],
     })
     return render_template('available_stocks_for_letter.html', **param)
 
 
 # --- Helpers for the crypto page -------------------------------------------
 
-# Quotes older than this are reloaded automatically when someone opens /crypto
-CRYPTO_AUTO_REFRESH_AFTER = timedelta(minutes=5)
 # Don't retry the automatic reload more often than this (CoinGecko's keyless API allows ~10-30 calls/min)
 _CRYPTO_AUTO_RETRY_AFTER = timedelta(minutes=1)
 _crypto_last_auto_attempt = None
@@ -299,36 +190,6 @@ def _crypto_updated_label(updated_at):
     if updated_at.date() == datetime.now().date():
         return f'в {updated_at:%H:%M}'
     return f'{updated_at:%d.%m} в {updated_at:%H:%M}'
-
-
-def _fmt_number_ru(value, max_decimals=8):
-    """Formats a number Russian-style: thin-space thousands, comma decimals, no trailing zeros."""
-    try:
-        val = float(value)
-    except (ValueError, TypeError):
-        return str(value)
-    text = f"{val:,.{max_decimals}f}"
-    if '.' in text:
-        text = text.rstrip('0').rstrip('.')
-    return text.replace(',', ' ').replace('.', ',')
-
-
-def _fmt_money_ru(value, sign):
-    """Formats a price as '85 534,00 $' (2 decimals for >= 1, more precision for small prices)."""
-    try:
-        val = float(value)
-    except (ValueError, TypeError):
-        return '—'
-    if abs(val) >= 1 or val == 0:
-        num = f"{val:,.2f}".replace(',', ' ').replace('.', ',')
-    else:
-        num = format_price(val).replace('.', ',')
-    return f"{num} {sign}"
-
-
-def _ticker_hue(symbol):
-    """Stable hue (0-359) per ticker for the coloured monogram."""
-    return (sum(ord(ch) * (i + 7) for i, ch in enumerate(symbol)) * 37) % 360
 
 
 def _portfolio_assets(kind):
@@ -417,7 +278,7 @@ def available_crypto_for_letter(letter='#'):
                 symbol_name = param.get('success' if is_ok else 'danger', '').replace('_a', '')
                 quantity = _crypto_holdings().get(symbol_name, 0) if is_ok else 0
                 return jsonify({'success': is_ok, 'symbol': symbol_name,
-                                'quantity': quantity, 'quantity_str': _fmt_number_ru(quantity)})
+                                'quantity': quantity, 'quantity_str': fmt_number_ru(quantity)})
             status_code = param.get('success') or param.get('danger')
             if clean_letter == '#':
                 return redirect(url_for('market.crypto', status=status_code))
@@ -435,7 +296,7 @@ def available_crypto_for_letter(letter='#'):
                   and qty >= 0 and _set_crypto_quantity(str(set_symbol), qty))
             quantity = _crypto_holdings().get(str(set_symbol), 0) if ok else 0
             return jsonify({'success': bool(ok), 'symbol': str(set_symbol),
-                            'quantity': quantity, 'quantity_str': _fmt_number_ru(quantity)})
+                            'quantity': quantity, 'quantity_str': fmt_number_ru(quantity)})
 
     # Read flash status from query parameters (PRG pattern)
     reload_arg = request.args.get('reload')
@@ -463,11 +324,11 @@ def available_crypto_for_letter(letter='#'):
             'symbol': crypto['symbol'],
             'name': crypto['name'],
             'title': crypto['title'] or crypto['name'],
-            'price': _fmt_money_ru(price_num, sign) if price_num is not None else '—',
+            'price': fmt_money_ru(price_num, sign) if price_num is not None else '—',
             'price_num': price_num if price_num is not None else 0,
-            'hue': _ticker_hue(crypto['symbol']),
+            'hue': ticker_hue(crypto['symbol']),
             'held': held,
-            'held_str': _fmt_number_ru(held) if held else '',
+            'held_str': fmt_number_ru(held) if held else '',
         })
 
     param['currency_code'] = main_symbol
@@ -487,89 +348,8 @@ def available_crypto_for_letter(letter='#'):
 
 # --- Fiat currencies ---------------------------------------------------------
 
-# ECB publishes rates once per working day; reload on page open if ours are older than this
-FIAT_AUTO_REFRESH_AFTER = timedelta(hours=1)
 _FIAT_AUTO_RETRY_AFTER = timedelta(minutes=1)
 _fiat_last_auto_attempt = None
-
-# The currencies users can display prices in go first
-_FIAT_FIRST = ['USD', 'EUR', 'GBP', 'JPY', 'CHF']
-
-# Russian name and sign for the currencies the ECB publishes
-_FIAT_INFO = {
-    'USD': ('Доллар США', '$'), 'EUR': ('Евро', '€'), 'GBP': ('Британский фунт', '£'),
-    'JPY': ('Японская иена', '¥'), 'CHF': ('Швейцарский франк', '₣'), 'AUD': ('Австралийский доллар', 'A$'),
-    'BGN': ('Болгарский лев', 'лв'), 'BRL': ('Бразильский реал', 'R$'), 'CAD': ('Канадский доллар', 'C$'),
-    'CNY': ('Китайский юань', '¥'), 'CZK': ('Чешская крона', 'Kč'), 'DKK': ('Датская крона', 'kr'),
-    'HKD': ('Гонконгский доллар', 'HK$'), 'HUF': ('Венгерский форинт', 'Ft'), 'IDR': ('Индонезийская рупия', 'Rp'),
-    'ILS': ('Израильский шекель', '₪'), 'INR': ('Индийская рупия', '₹'), 'ISK': ('Исландская крона', 'kr'),
-    'KRW': ('Южнокорейская вона', '₩'), 'MXN': ('Мексиканское песо', '$'), 'MYR': ('Малайзийский ринггит', 'RM'),
-    'NOK': ('Норвежская крона', 'kr'), 'NZD': ('Новозеландский доллар', 'NZ$'), 'PHP': ('Филиппинское песо', '₱'),
-    'PLN': ('Польский злотый', 'zł'), 'RON': ('Румынский лей', 'lei'), 'RUB': ('Российский рубль', '₽'),
-    'SEK': ('Шведская крона', 'kr'), 'SGD': ('Сингапурский доллар', 'S$'), 'THB': ('Тайский бат', '฿'),
-    'TRY': ('Турецкая лира', '₺'), 'ZAR': ('Южноафриканский рэнд', 'R'),
-}
-
-_MONTHS_GENITIVE = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа',
-                    'сентября', 'октября', 'ноября', 'декабря']
-
-
-def _fiat_unit(price):
-    """Small currencies are quoted per 100 / 1000 / 10 000 units, like banks do."""
-    if price >= 0.01:
-        return 1
-    unit = 100
-    while price * unit < 0.1:
-        unit *= 10
-    return unit
-
-
-def _fmt_fiat_price(value, sign):
-    num = f"{value:,.{2 if value >= 1 else 4}f}".replace(',', '\u202f').replace('.', ',')
-    return f"{num}\u00a0{sign}"
-
-
-def _fiat_rows(fiats, holdings):
-    code, sign, _ = _user_currency()
-    by_code = {f['code']: f for f in fiats}
-    base = by_code.get(code)
-    base_price = base['price'] if base and base['price'] else (MAIN_SYMBOLS[code][1] or 1.0)
-    base_change = (base['change_pct'] or 0) if base else 0
-
-    def order(f):
-        return (_FIAT_FIRST.index(f['code']) if f['code'] in _FIAT_FIRST else len(_FIAT_FIRST), f['code'])
-
-    rows = []
-    for f in sorted(fiats, key=order):
-        if not f['price']:
-            continue
-        ru, fiat_sign = _FIAT_INFO.get(f['code'], (f['name'], f['code']))
-        price = f['price'] / base_price
-        unit = _fiat_unit(price)
-        change = None
-        if f['change_pct'] is not None:
-            # Change in the user's currency: both prices moved against USD
-            change = ((1 + f['change_pct'] / 100) / (1 + base_change / 100) - 1) * 100
-        held = holdings.get(f['code'], 0) or 0
-        rows.append({
-            'code': f['code'],
-            'title': ru,
-            'name': f['name'],
-            'sign': fiat_sign,
-            'hue': _ticker_hue(f['code']),
-            'is_base': f['code'] == code,
-            'price_num': price,
-            'price_str': _fmt_fiat_price(price * unit, sign),
-            'unit': unit,
-            'unit_str': f"{_fmt_number_ru(unit)} {f['code']}",
-            'change_str': _fmt_change(change) if change is not None and abs(change) >= 0.005 else ('0,00%' if change is not None else ''),
-            'change_up': change is not None and change > 0,
-            'change_down': change is not None and change < 0,
-            'held': held,
-            'held_str': _fmt_number_ru(held, 2) if held else '',
-            'search': ' '.join([f['code'], ru, f['name'] or '']).lower(),
-        })
-    return rows
 
 
 @market_bp.route('/fiat', methods=['GET', 'POST'])
@@ -588,7 +368,7 @@ def fiat():
         if data.get('add_fiat') or data.get('set_fiat'):
             return _portfolio_quantity_response('fiat', data.get('add_fiat'), data.get('set_fiat'), data)
 
-    code, sign, _ = _user_currency()
+    code, sign, _ = user_currency()
     fiats = get_all_fiats()
     reload_arg = request.args.get('reload')
     rate_date = max((f['rate_date'] for f in fiats if f['rate_date']), default=None)
@@ -602,11 +382,11 @@ def fiat():
         _fiat_last_auto_attempt = now
 
     param = {
-        'fiats': _fiat_rows(fiats, _portfolio_assets('fiat')),
+        'fiats': fiat_rows(fiats, _portfolio_assets('fiat')),
         'currency_code': code,
         'currency_sign': sign,
         'has_portfolio': current_user.is_authenticated and current_user.portfolio_id is not None,
-        'rate_date': f'{rate_date.day} {_MONTHS_GENITIVE[rate_date.month - 1]} {rate_date.year}' if rate_date else None,
+        'rate_date': f'{rate_date.day} {MONTHS_GENITIVE[rate_date.month - 1]} {rate_date.year}' if rate_date else None,
         'reload': int(reload_arg) if reload_arg in ('1', '2') else None,
         'auto_refresh': auto_refresh,
     }

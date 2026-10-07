@@ -260,6 +260,32 @@
                                 <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
                             </div>
                         </a>
+
+                        <!-- Portfolio visibility -->
+                        <div class="p-space-md rounded-lg bg-surface-container-low border border-outline-variant/20 flex flex-col gap-3">
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="font-body-md text-body-md font-semibold text-on-surface">Видимость портфеля</span>
+                            </div>
+                            <form action="" method="post" role="group" aria-label="Видимость портфеля"
+                                  class="grid grid-cols-2 gap-1 p-1 rounded-lg bg-surface-container-lowest border border-outline-variant/30">
+                                {{ visibility_form.hidden_tag() }}
+                                {% set seg_on = 'bg-surface-container-high text-on-surface shadow-sm' %}
+                                {% set seg_off = 'text-outline hover:text-on-surface' %}
+                                <button type="submit" name="{{ visibility_form.make_private.name }}" value="1"
+                                        aria-pressed="{{ 'true' if portfolio_private else 'false' }}"
+                                        class="h-9 rounded-md flex items-center justify-center gap-1.5 text-sm font-medium transition-colors cursor-pointer {{ seg_on if portfolio_private else seg_off }}">
+                                    <span class="material-symbols-outlined text-[16px]">lock</span>Приватный
+                                </button>
+                                <button type="submit" name="{{ visibility_form.make_public.name }}" value="1"
+                                        aria-pressed="{{ 'false' if portfolio_private else 'true' }}"
+                                        class="h-9 rounded-md flex items-center justify-center gap-1.5 text-sm font-medium transition-colors cursor-pointer {{ seg_off if portfolio_private else seg_on }}">
+                                    <span class="material-symbols-outlined text-[16px]">public</span>Публичный
+                                </button>
+                            </form>
+                            <p class="font-body-sm text-body-sm text-outline">
+                                {% if portfolio_private %}Портфель видите только вы.{% else %}Любой, у кого есть ссылка, может посмотреть портфель, но не изменить его.{% endif %}
+                            </p>
+                        </div>
                         {% endif %}
 
                         <!-- Action 2: Change Base Currency -->
