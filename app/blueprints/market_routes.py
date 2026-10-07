@@ -10,7 +10,7 @@ from app.services.data_service import (
     save_ticker_price
 )
 from app.services.api_client import fetch_quote
-from app.formatting import fmt_number_ru, fmt_money_ru, ticker_hue, user_currency, MONTHS_GENITIVE
+from app.formatting import fmt_number_ru, fmt_money_ru, ticker_hue, user_currency, MONTHS_GENITIVE, to_user_tz
 from app.presenters import (
     stock_row, fiat_rows, MAX_STOCKS_IN_PORTFOLIO, CRYPTO_AUTO_REFRESH_AFTER, FIAT_AUTO_REFRESH_AFTER
 )
@@ -187,9 +187,10 @@ _crypto_last_auto_attempt = None
 def _crypto_updated_label(updated_at):
     if not updated_at:
         return None
-    if updated_at.date() == datetime.now().date():
-        return f'в {updated_at:%H:%M}'
-    return f'{updated_at:%d.%m} в {updated_at:%H:%M}'
+    shown, shown_now = to_user_tz(updated_at), to_user_tz(datetime.now())
+    if shown.date() == shown_now.date():
+        return f'в {shown:%H:%M}'
+    return f'{shown:%d.%m} в {shown:%H:%M}'
 
 
 def _portfolio_assets(kind):

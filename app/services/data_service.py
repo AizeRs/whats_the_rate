@@ -38,24 +38,24 @@ def update_currencies_db(main_symbols_dict):
         return False
     try:
         now = datetime.now()
-        session = create_session()
-        for currency, name in names.items():
-            if currency in prices:
-                rate = 1 / float(prices[currency])
-                fiat = session.query(FiatRate).filter(FiatRate.symbol == currency).first()
-                if not fiat:
-                    fiat = FiatRate(symbol=currency, name=name)
-                    session.add(fiat)
-                fiat.price = rate
-                # Rates are units per 1 USD, so the USD price of one unit changes by previous / current
-                previous = previous_prices.get(currency)
-                fiat.change_pct = (float(previous) / float(prices[currency]) - 1) * 100 if previous else None
-                fiat.rate_date = rate_date
-                fiat.updated_at = now
-                if currency in main_symbols_dict:
-                    main_symbols_dict[currency] = (main_symbols_dict[currency][0], rate)
-        session.commit()
-        return True
+        with create_session() as session:
+            for currency, name in names.items():
+                if currency in prices:
+                    rate = 1 / float(prices[currency])
+                    fiat = session.query(FiatRate).filter(FiatRate.symbol == currency).first()
+                    if not fiat:
+                        fiat = FiatRate(symbol=currency, name=name)
+                        session.add(fiat)
+                    fiat.price = rate
+                    # Rates are units per 1 USD, so the USD price of one unit changes by previous / current
+                    previous = previous_prices.get(currency)
+                    fiat.change_pct = (float(previous) / float(prices[currency]) - 1) * 100 if previous else None
+                    fiat.rate_date = rate_date
+                    fiat.updated_at = now
+                    if currency in main_symbols_dict:
+                        main_symbols_dict[currency] = (main_symbols_dict[currency][0], rate)
+            session.commit()
+            return True
     except Exception as e:
         print(f"Error writing currencies to db: {e}")
         return False
@@ -71,18 +71,18 @@ def update_tickers_db():
         return False
         
     try:
-        session = create_session()
-        existing = {s.ticker: s for s in session.query(StockRate).all()}
-        for ticker_symbol, description, stock_type, mic in my_list:
-            stock = existing.get(ticker_symbol)
-            if not stock:
-                stock = StockRate(ticker=ticker_symbol, name=description)
-                session.add(stock)
-                existing[ticker_symbol] = stock
-            stock.type = stock_type
-            stock.mic = mic
-        session.commit()
-        return True
+        with create_session() as session:
+            existing = {s.ticker: s for s in session.query(StockRate).all()}
+            for ticker_symbol, description, stock_type, mic in my_list:
+                stock = existing.get(ticker_symbol)
+                if not stock:
+                    stock = StockRate(ticker=ticker_symbol, name=description)
+                    session.add(stock)
+                    existing[ticker_symbol] = stock
+                stock.type = stock_type
+                stock.mic = mic
+            session.commit()
+            return True
     except Exception as e:
         print(f"Error writing tickers to db: {e}")
         return False
@@ -90,15 +90,15 @@ def update_tickers_db():
 def save_ticker_price(ticker, price, change_pct=None):
     """Saves a new price (and daily change, %) for a stock ticker and remembers when we saved it."""
     try:
-        session = create_session()
-        stock = session.query(StockRate).filter(StockRate.ticker == ticker).first()
-        if stock:
-            stock.price = price
-            stock.change_pct = change_pct
-            stock.price_updated_at = datetime.now()
-            session.commit()
-            return True
-        return False
+        with create_session() as session:
+            stock = session.query(StockRate).filter(StockRate.ticker == ticker).first()
+            if stock:
+                stock.price = price
+                stock.change_pct = change_pct
+                stock.price_updated_at = datetime.now()
+                session.commit()
+                return True
+            return False
     except Exception as e:
         print(f"Error saving ticker price to db: {e}")
         return False
@@ -116,23 +116,23 @@ def get_stocks_by_letter(query, page=1, per_page=50):
     """
     stocks, has_next = [], False
     try:
-        session = create_session()
-        query = str(query).strip()
-        if len(query) == 1:
-            q = session.query(StockRate).filter(StockRate.ticker.startswith(query.upper()))
-        else:
-            q = session.query(StockRate).filter(or_(
-                StockRate.ticker.startswith(query.upper()),
-                StockRate.name.ilike(f'%{query}%')
-            ))
-        # Finnhub gives no popularity data, so: exchange-listed first, then over-the-counter (OOTC),
-        # then tickers without an exchange (no longer in Finnhub's list, e.g. delisted);
-        # inside each group stocks with a known price first, then alphabetically
-        listing_rank = case((StockRate.mic.is_(None), 2), (StockRate.mic == 'OOTC', 1), else_=0)
-        results = q.order_by(listing_rank, StockRate.price.is_(None).asc(), StockRate.ticker.asc()) \
-            .offset((page - 1) * per_page).limit(per_page + 1).all()
-        has_next = len(results) > per_page
-        stocks = [_stock_dict(r) for r in results[:per_page]]
+        with create_session() as session:
+            query = str(query).strip()
+            if len(query) == 1:
+                q = session.query(StockRate).filter(StockRate.ticker.startswith(query.upper()))
+            else:
+                q = session.query(StockRate).filter(or_(
+                    StockRate.ticker.startswith(query.upper()),
+                    StockRate.name.ilike(f'%{query}%')
+                ))
+            # Finnhub gives no popularity data, so: exchange-listed first, then over-the-counter (OOTC),
+            # then tickers without an exchange (no longer in Finnhub's list, e.g. delisted);
+            # inside each group stocks with a known price first, then alphabetically
+            listing_rank = case((StockRate.mic.is_(None), 2), (StockRate.mic == 'OOTC', 1), else_=0)
+            results = q.order_by(listing_rank, StockRate.price.is_(None).asc(), StockRate.ticker.asc()) \
+                .offset((page - 1) * per_page).limit(per_page + 1).all()
+            has_next = len(results) > per_page
+            stocks = [_stock_dict(r) for r in results[:per_page]]
     except Exception as e:
         print(e)
     return stocks, has_next
@@ -143,10 +143,10 @@ def get_stocks_by_tickers(tickers):
     if not tickers:
         return []
     try:
-        session = create_session()
-        results = session.query(StockRate).filter(StockRate.ticker.in_(list(tickers))) \
-            .order_by(StockRate.ticker.asc()).all()
-        return [_stock_dict(r) for r in results]
+        with create_session() as session:
+            results = session.query(StockRate).filter(StockRate.ticker.in_(list(tickers))) \
+                .order_by(StockRate.ticker.asc()).all()
+            return [_stock_dict(r) for r in results]
     except Exception as e:
         print(e)
         return []
@@ -154,8 +154,8 @@ def get_stocks_by_tickers(tickers):
 def get_crypto_updated_at():
     """When the crypto quotes were last loaded (None if never)."""
     try:
-        session = create_session()
-        return session.query(func.max(CryptoRate.price_updated_at)).scalar()
+        with create_session() as session:
+            return session.query(func.max(CryptoRate.price_updated_at)).scalar()
     except Exception as e:
         print(e)
         return None
@@ -167,12 +167,12 @@ def get_crypto_by_symbols(symbols):
     if not symbols:
         return found
     try:
-        session = create_session()
-        results = session.query(CryptoRate).filter(CryptoRate.symbol.in_(list(symbols))) \
-            .order_by(CryptoRate.id.asc()).all()
-        for r in results:
-            found.setdefault(r.symbol, {'symbol': r.symbol, 'name': r.coin_id, 'title': r.name,
-                                        'price': r.price, 'updated_at': r.price_updated_at})
+        with create_session() as session:
+            results = session.query(CryptoRate).filter(CryptoRate.symbol.in_(list(symbols))) \
+                .order_by(CryptoRate.id.asc()).all()
+            for r in results:
+                found.setdefault(r.symbol, {'symbol': r.symbol, 'name': r.coin_id, 'title': r.name,
+                                            'price': r.price, 'updated_at': r.price_updated_at})
     except Exception as e:
         print(e)
     return found
@@ -181,32 +181,32 @@ def get_crypto_by_letter(letter):
     """Returns a list of cryptos starting with a given letter, matching search query, or top-50 (#)."""
     cryptos = []
     try:
-        session = create_session()
-        query = str(letter).strip()
-        if query in ('#', 'top', 'TOP', '%23'):
-            results = session.query(CryptoRate).order_by(CryptoRate.id.asc()).limit(50).all()
-        elif len(query) == 1:
-            q_lower = query.lower()
-            q_upper = query.upper()
-            results = session.query(CryptoRate).filter(
-                or_(
-                    CryptoRate.coin_id.startswith(q_lower),
-                    CryptoRate.symbol.startswith(q_upper)
-                )
-            ).all()
-        else:
-            pattern = f"%{query}%"
-            results = session.query(CryptoRate).filter(
-                or_(
-                    CryptoRate.symbol.ilike(pattern),
-                    CryptoRate.coin_id.ilike(pattern),
-                    CryptoRate.name.ilike(pattern)
-                )
-            ).all()
-            
-        for r in results:
-            cryptos.append({'symbol': r.symbol, 'name': r.coin_id, 'title': r.name,
-                            'price': str(r.price) if r.price is not None else "No price data"})
+        with create_session() as session:
+            query = str(letter).strip()
+            if query in ('#', 'top', 'TOP', '%23'):
+                results = session.query(CryptoRate).order_by(CryptoRate.id.asc()).limit(50).all()
+            elif len(query) == 1:
+                q_lower = query.lower()
+                q_upper = query.upper()
+                results = session.query(CryptoRate).filter(
+                    or_(
+                        CryptoRate.coin_id.startswith(q_lower),
+                        CryptoRate.symbol.startswith(q_upper)
+                    )
+                ).all()
+            else:
+                pattern = f"%{query}%"
+                results = session.query(CryptoRate).filter(
+                    or_(
+                        CryptoRate.symbol.ilike(pattern),
+                        CryptoRate.coin_id.ilike(pattern),
+                        CryptoRate.name.ilike(pattern)
+                    )
+                ).all()
+
+            for r in results:
+                cryptos.append({'symbol': r.symbol, 'name': r.coin_id, 'title': r.name,
+                                'price': str(r.price) if r.price is not None else "No price data"})
     except Exception as e:
         print(e)
     return cryptos
@@ -214,10 +214,10 @@ def get_crypto_by_letter(letter):
 def get_all_fiats():
     """Returns all fiat currencies."""
     try:
-        session = create_session()
-        results = session.query(FiatRate).all()
-        return [{'code': r.symbol, 'name': r.name, 'price': r.price, 'change_pct': r.change_pct,
-                 'rate_date': r.rate_date, 'updated_at': r.updated_at} for r in results]
+        with create_session() as session:
+            results = session.query(FiatRate).all()
+            return [{'code': r.symbol, 'name': r.name, 'price': r.price, 'change_pct': r.change_pct,
+                     'rate_date': r.rate_date, 'updated_at': r.updated_at} for r in results]
     except Exception as e:
         print(e)
         return []
@@ -226,13 +226,13 @@ def get_all_assets_dict():
     """Reads all assets into dictionaries for fast lookup."""
     assets = {'stocks': {}, 'crypto': {}, 'fiat': {}}
     try:
-        session = create_session()
-        for r in session.query(StockRate).all():
-            assets['stocks'][r.ticker] = (r.name, str(r.price) if r.price is not None else "No price data")
-        for r in session.query(CryptoRate).all():
-            assets['crypto'][r.symbol] = (r.coin_id, str(r.price) if r.price is not None else "No price data")
-        for r in session.query(FiatRate).all():
-            assets['fiat'][r.symbol] = (r.name, str(r.price) if r.price is not None else "No price data")
+        with create_session() as session:
+            for r in session.query(StockRate).all():
+                assets['stocks'][r.ticker] = (r.name, str(r.price) if r.price is not None else "No price data")
+            for r in session.query(CryptoRate).all():
+                assets['crypto'][r.symbol] = (r.coin_id, str(r.price) if r.price is not None else "No price data")
+            for r in session.query(FiatRate).all():
+                assets['fiat'][r.symbol] = (r.name, str(r.price) if r.price is not None else "No price data")
     except Exception as e:
         print(e)
     return assets

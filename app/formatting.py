@@ -1,5 +1,7 @@
 """Formatting helpers shared by the market and portfolio pages: numbers, prices, names, ages."""
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+from flask import request, has_request_context
 from flask_login import current_user
 from app.services.symbols import MAIN_SYMBOLS
 from app.utils import format_price
@@ -50,6 +52,18 @@ EXCHANGES = {'XNAS': 'NASDAQ', 'XNYS': 'NYSE', 'ARCX': 'NYSE Arca', 'XASE': 'NYS
               'BATS': 'Cboe', 'OOTC': 'Внебиржевой рынок'}
 
 
+def to_user_tz(moment):
+    """Server-local naive datetime -> naive datetime in the visitor's timezone (browser sets the 'tz' cookie).
+    Only for DISPLAY: all stored values and age arithmetic stay in server time."""
+    name = request.cookies.get('tz') if has_request_context() else None
+    if not moment or not name:
+        return moment
+    try:
+        return moment.astimezone(ZoneInfo(name)).replace(tzinfo=None)
+    except (ZoneInfoNotFoundError, ValueError, OSError):
+        return moment
+
+
 def price_age(updated_at):
     """How long ago WE saved the price: label + freshness flags for the UI."""
     if not updated_at:
@@ -57,13 +71,15 @@ def price_age(updated_at):
     now = datetime.now()
     diff = now - updated_at
     day = timedelta(days=1)
-    today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    shown = to_user_tz(updated_at)
+    shown_now = to_user_tz(now)
+    today = shown_now.replace(hour=0, minute=0, second=0, microsecond=0)
     if diff < timedelta(minutes=1):
         label = 'только что'
-    elif updated_at >= today:
-        label = f'сегодня в {updated_at:%H:%M}'
-    elif updated_at >= today - day:
-        label = f'вчера в {updated_at:%H:%M}'
+    elif shown >= today:
+        label = f'сегодня в {shown:%H:%M}'
+    elif shown >= today - day:
+        label = f'вчера в {shown:%H:%M}'
     elif diff < 30 * day:
         label = f'обновлено {diff.days} дн. назад'
     elif diff < 365 * day:
@@ -72,7 +88,7 @@ def price_age(updated_at):
         label = 'обновлено больше года назад'
     return {
         'label': label,
-        'title': f'Цена сохранена на сайте {updated_at:%d.%m.%Y в %H:%M}. Нажмите ⟳, чтобы обновить',
+        'title': f'Цена сохранена на сайте {shown:%d.%m.%Y в %H:%M}. Нажмите ⟳, чтобы обновить',
         'fresh': diff < day,
         'very_stale': diff >= 30 * day,
     }

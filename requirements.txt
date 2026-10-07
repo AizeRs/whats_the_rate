@@ -24,3 +24,4 @@ urllib3
 Werkzeug
 WTForms
 yarl
+tzdata

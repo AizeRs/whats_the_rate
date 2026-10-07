@@ -10,6 +10,23 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
     
+    <script>
+        // Remember the visitor's timezone so the server can show update times in it
+        (function () {
+            try {
+                var tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                var had = document.cookie.indexOf('tz=' + encodeURIComponent(tz)) !== -1;
+                if (tz && !had) {
+                    document.cookie = 'tz=' + encodeURIComponent(tz) + ';path=/;max-age=31536000;SameSite=Lax';
+                    // First visit (or timezone changed): reload once so the page is rendered with the right time
+                    if (document.cookie.indexOf('tz=' + encodeURIComponent(tz)) !== -1 && !sessionStorage.getItem('tzReloaded')) {
+                        sessionStorage.setItem('tzReloaded', '1');
+                        location.reload();
+                    }
+                }
+            } catch (e) {}
+        })();
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script id="tailwind-config">
     tailwind.config = {

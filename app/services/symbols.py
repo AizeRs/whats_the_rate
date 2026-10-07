@@ -15,10 +15,10 @@ MAIN_SYMBOLS = {
 def load_main_symbols():
     """Loads fiat rates from the database into MAIN_SYMBOLS."""
     try:
-        session = create_session()
-        for symbol in MAIN_SYMBOLS:
-            fiat = session.query(FiatRate).filter(FiatRate.symbol == symbol).first()
-            if fiat and fiat.price:
-                MAIN_SYMBOLS[symbol] = (MAIN_SYMBOLS[symbol][0], fiat.price)
+        with create_session() as session:
+            for symbol in MAIN_SYMBOLS:
+                fiat = session.query(FiatRate).filter(FiatRate.symbol == symbol).first()
+                if fiat and fiat.price:
+                    MAIN_SYMBOLS[symbol] = (MAIN_SYMBOLS[symbol][0], fiat.price)
     except Exception as e:
         print(f"Error loading main symbols: {e}")
