@@ -1,10 +1,11 @@
-from flask import Blueprint, render_template, redirect, url_for, request
+from flask import Blueprint, render_template, redirect, url_for, request, send_from_directory, current_app
 from flask_login import current_user, login_required
 from app.forms import ChangePassForm, CreatePortfolio, PortfolioVisibility
 from app.models import db_session
 from app.models.users import User
 from app.models.portfolios import Portfolio
 from app.services.symbols import MAIN_SYMBOLS
+import os
 import secrets
 
 main_bp = Blueprint('main', __name__)
@@ -14,6 +15,12 @@ main_bp = Blueprint('main', __name__)
 def index():
     """Renders the main index page."""
     return render_template('index.html')
+
+
+@main_bp.route('/favicon.ico')
+def favicon():
+    """Browsers request /favicon.ico at the root even without a <link>."""
+    return send_from_directory(os.path.join(current_app.static_folder, 'img', 'logo'), 'favicon.ico')
 
 
 @main_bp.route('/user', methods=['GET', 'POST'])

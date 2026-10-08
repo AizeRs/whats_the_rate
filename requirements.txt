@@ -12,7 +12,7 @@ Flask
 Flask-Login
 Flask-WTF
 frozenlist
-greenlet<3.0
+greenlet
 idna
 itsdangerous
 Jinja2
