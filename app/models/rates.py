@@ -12,6 +12,7 @@ class StockRate(SqlAlchemyBase):
     mic = sqlalchemy.Column(sqlalchemy.String, nullable=True)  # Exchange code: XNAS, XNYS, ..., OOTC = over-the-counter
     price = sqlalchemy.Column(sqlalchemy.Float, nullable=True)
     change_pct = sqlalchemy.Column(sqlalchemy.Float, nullable=True)  # Daily change, % (Finnhub "dp")
+    market_cap = sqlalchemy.Column(sqlalchemy.Float, nullable=True)  # USD, Finnhub profile (home page stocks only)
     price_updated_at = sqlalchemy.Column(sqlalchemy.DateTime, nullable=True)  # When WE saved the price
 
 class CryptoRate(SqlAlchemyBase):
@@ -23,6 +24,10 @@ class CryptoRate(SqlAlchemyBase):
     coin_id = sqlalchemy.Column(sqlalchemy.String, unique=True)
     name = sqlalchemy.Column(sqlalchemy.String, nullable=True)  
     price = sqlalchemy.Column(sqlalchemy.Float, nullable=True)
+    change_pct = sqlalchemy.Column(sqlalchemy.Float, nullable=True)  # Change over 24 h, % (CoinGecko)
+    change_7d_pct = sqlalchemy.Column(sqlalchemy.Float, nullable=True)  # Change over 7 days, %
+    market_cap = sqlalchemy.Column(sqlalchemy.Float, nullable=True)  # USD
+    sparkline = sqlalchemy.Column(sqlalchemy.Text, nullable=True)  # JSON list: 7 days of USD prices, thinned
     price_updated_at = sqlalchemy.Column(sqlalchemy.DateTime, nullable=True)  # When the quotes were last loaded
 
 class FiatRate(SqlAlchemyBase):

@@ -78,6 +78,7 @@ def fiat_rows(fiats, holdings):
             'change_str': fmt_change(change) if change is not None and abs(change) >= 0.005 else ('0,00%' if change is not None else ''),
             'change_up': change is not None and change > 0,
             'change_down': change is not None and change < 0,
+            'change_pct': change,
             'held': held,
             'held_str': fmt_number_ru(held, 2) if held else '',
             'search': ' '.join([f['code'], ru, f['name'] or '']).lower(),

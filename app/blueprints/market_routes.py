@@ -10,7 +10,7 @@ from app.services.data_service import (
     save_ticker_price
 )
 from app.services.api_client import fetch_quote
-from app.formatting import fmt_number_ru, fmt_money_ru, ticker_hue, user_currency, MONTHS_GENITIVE, to_user_tz
+from app.formatting import fmt_number_ru, fmt_money_ru, fmt_change, price_age, ticker_hue, user_currency, MONTHS_GENITIVE, to_user_tz
 from app.presenters import (
     stock_row, fiat_rows, MAX_STOCKS_IN_PORTFOLIO, CRYPTO_AUTO_REFRESH_AFTER, FIAT_AUTO_REFRESH_AFTER
 )
@@ -320,6 +320,8 @@ def available_crypto_for_letter(letter='#'):
         except (ValueError, TypeError, ZeroDivisionError):
             price_num = None
         held = holdings.get(crypto['symbol'], 0) or 0
+        # 24 h change from CoinGecko, shown only while the quotes are fresh
+        change = crypto['change_pct'] if price_age(crypto['updated_at'])['fresh'] else None
         param['crypto'].append({
             'rank': rank,
             'symbol': crypto['symbol'],
@@ -327,6 +329,8 @@ def available_crypto_for_letter(letter='#'):
             'title': crypto['title'] or crypto['name'],
             'price': fmt_money_ru(price_num, sign) if price_num is not None else '—',
             'price_num': price_num if price_num is not None else 0,
+            'change_str': ('0,00%' if abs(change) < 0.005 else fmt_change(change)) if change is not None else '',
+            'change_dir': 'flat' if change is None or abs(change) < 0.005 else ('up' if change > 0 else 'down'),
             'hue': ticker_hue(crypto['symbol']),
             'held': held,
             'held_str': fmt_number_ru(held) if held else '',

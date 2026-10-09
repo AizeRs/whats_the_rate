@@ -1,0 +1,63 @@
+{# Rows of the home page quotes table. stock_row is also rendered by main.index for AJAX price refreshes. #}
+{% set grid_crypto = 'lg:grid-cols-[28px_minmax(0,1fr)_112px_84px_168px_112px]' %}
+{% set grid_stocks = 'lg:grid-cols-[28px_minmax(0,1fr)_112px_84px_112px]' %}
+{% set grid_fiat = 'lg:grid-cols-[28px_minmax(0,1fr)_170px_84px_168px]' %}
+{% set row_base = 'grid grid-cols-[minmax(0,1fr)_auto_76px] gap-x-3 items-center px-4 lg:px-6 min-h-[56px] border-t border-white/[.05] hover:bg-white/[.025] transition-colors' %}
+
+{% macro asset(r) -%}
+<span class="hidden lg:block font-label-ticker text-xs text-outline/80">{{ r.rank }}</span>
+<div class="flex items-center gap-3 min-w-0">
+    <span aria-hidden="true" class="shrink-0 w-[30px] h-[30px] flex items-center justify-center font-label-ticker font-bold {{ 'rounded-lg text-[10px]' if r.square else 'rounded-full text-[13px]' }}"
+          style="color: hsl({{ r.hue }} 85% 74%); background: hsl({{ r.hue }} 70% 55% / .15);">{{ r.mono }}</span>
+    <span class="text-sm font-semibold text-on-surface truncate">{{ r.title }}</span>
+    <span class="hidden sm:inline font-label-ticker text-xs text-outline shrink-0">{{ r.code }}</span>
+</div>
+{%- endmacro %}
+
+{% macro change(r) -%}
+{% if r.change_str %}
+<span class="font-label-ticker text-[13px] text-right whitespace-nowrap {{ {'up': 'text-tertiary', 'down': 'text-error'}.get(r.dir, 'text-outline') }}">{{ r.change_str }}</span>
+{% else %}
+<span class="text-xs text-right text-outline whitespace-nowrap">{{ r.note }}</span>
+{% endif %}
+{%- endmacro %}
+
+{% macro week(r) -%}
+<span class="hidden lg:flex items-center justify-center gap-2">
+    {% if r.spark %}
+    <svg width="84" height="26" viewBox="0 0 96 28" preserveAspectRatio="none" aria-hidden="true">
+        <polyline points="{{ r.spark }}" fill="none" stroke="{{ '#f2a29a' if r.week_dir == 'down' else '#4edea3' }}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+    </svg>
+    {% endif %}
+    <span class="w-[66px] font-label-ticker text-xs text-right whitespace-nowrap {{ {'up': 'text-tertiary', 'down': 'text-error'}.get(r.week_dir, 'text-outline') }}">{{ r.week }}</span>
+</span>
+{%- endmacro %}
+
+{% macro cap(r) -%}
+<span class="hidden lg:block font-label-ticker text-[13px] text-on-surface-variant text-right whitespace-nowrap overflow-hidden text-ellipsis">{{ r.cap }}</span>
+{%- endmacro %}
+
+{% macro price(r) -%}
+<span class="font-label-ticker text-sm font-semibold text-on-surface text-right whitespace-nowrap">{% if r.unit %}<span class="hidden sm:inline text-on-surface-variant font-medium">{{ r.unit }}</span>{% endif %}{{ r.price_str }}</span>
+{%- endmacro %}
+
+{% macro crypto_row(r) -%}
+<div class="{{ row_base }} {{ grid_crypto }}">{{ asset(r) }}{{ price(r) }}{{ change(r) }}{{ week(r) }}{{ cap(r) }}</div>
+{%- endmacro %}
+
+{% macro stock_row(r) -%}
+<div{% if r.refresh %} data-refresh="{{ r.refresh }}"{% endif %} class="{{ row_base }} {{ grid_stocks }}">{{ asset(r) }}{{ price(r) }}{{ change(r) }}{{ cap(r) }}</div>
+{%- endmacro %}
+
+{% macro fiat_row(r) -%}
+<div class="{{ row_base }} {{ grid_fiat }}">{{ asset(r) }}{{ price(r) }}{{ change(r) }}{{ week(r) }}</div>
+{%- endmacro %}
+
+{% macro head(tab) -%}
+{% set grid = {'crypto': grid_crypto, 'stocks': grid_stocks, 'fiat': grid_fiat}[tab.key] %}
+<div class="hidden lg:grid {{ grid }} gap-x-3 items-center px-6 py-2.5 text-xs font-medium text-outline">
+    <span>#</span><span>Актив</span><span class="text-right">Цена</span><span class="text-right">{{ tab.change_head }}</span>
+    {% if tab.week %}<span class="text-center">7 дней</span>{% endif %}
+    {% if tab.cap %}<span class="text-right">Капитализация</span>{% endif %}
+</div>
+{%- endmacro %}

@@ -198,7 +198,12 @@
                     </div>
 
                     <!-- Price -->
-                    <span class="font-label-numeric-md text-[15px] text-on-surface font-semibold text-right tabular-nums whitespace-nowrap">{{ pair['price'] }}</span>
+                    <div class="flex flex-col items-end gap-0.5">
+                        <span class="font-label-numeric-md text-[15px] text-on-surface font-semibold text-right tabular-nums whitespace-nowrap">{{ pair['price'] }}</span>
+                        {% if pair['change_str'] %}
+                        <span class="font-label-ticker text-xs whitespace-nowrap {{ {'up': 'text-tertiary', 'down': 'text-error'}.get(pair['change_dir'], 'text-outline') }}" title="Изменение за 24 часа">{{ pair['change_str'] }}</span>
+                        {% endif %}
+                    </div>
 
                     <!-- Portfolio -->
                     {% if show_portfolio %}

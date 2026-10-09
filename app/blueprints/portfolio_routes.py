@@ -10,7 +10,7 @@ from app.services.data_service import (
     get_stocks_by_tickers, get_crypto_by_symbols, get_all_fiats
 )
 from app.services.api_client import fetch_quote
-from app.formatting import price_age, fmt_money_ru, fmt_number_ru, ticker_hue, user_currency, MONTHS_GENITIVE
+from app.formatting import price_age, fmt_change, fmt_money_ru, fmt_number_ru, ticker_hue, user_currency, MONTHS_GENITIVE
 from app.presenters import (
     stock_row, fiat_rows, MAX_STOCKS_IN_PORTFOLIO, STOCK_AUTO_REFRESH_AFTER, CRYPTO_AUTO_REFRESH_AFTER,
     FIAT_AUTO_REFRESH_AFTER
@@ -51,6 +51,7 @@ def _build_rows(data):
             'qty': r['held'], 'qty_str': r['held_str'], 'unit': 'шт.',
             'price_str': r['price_str'], 'value': r['price_num'] * r['held'],
             'change_str': r['change_str'] if r['age']['fresh'] else '', 'change_dir': 'up' if r['change_up'] else 'down',
+            'change_pct': stock.get('change_pct') if r['age']['fresh'] else None,
             'age': r['age'],
         })
 
@@ -59,11 +60,14 @@ def _build_rows(data):
     for symbol, coin in sorted(get_crypto_by_symbols(cryptos.keys()).items()):
         qty = cryptos.get(symbol, 0) or 0
         price = coin['price'] / rate if coin['price'] is not None else None
+        age = price_age(coin['updated_at'])
+        change = coin.get('change_pct') if age['fresh'] else None
         rows['crypto'].append({
             'code': symbol, 'title': coin['title'] or coin['name'], 'mono': symbol[:1], 'square': False,
             'hue': ticker_hue(symbol), 'qty': qty, 'qty_str': fmt_number_ru(qty), 'unit': symbol,
             'price_str': fmt_money_ru(price, sign) if price is not None else '', 'value': (price or 0) * qty,
-            'change_str': '', 'change_dir': 'flat', 'age': price_age(coin['updated_at']),
+            'change_str': fmt_change(change), 'change_dir': 'up' if (change or 0) >= 0 else 'down',
+            'change_pct': change, 'age': age,
         })
 
     # Fiat
@@ -81,6 +85,7 @@ def _build_rows(data):
             'value': f['price_num'] * f['held'],
             'change_str': f['change_str'],
             'change_dir': 'up' if f['change_up'] else ('down' if f['change_down'] else 'flat'),
+            'change_pct': f['change_pct'],
             'age': {'label': ecb_label, 'title': '', 'fresh': True, 'very_stale': False},
         })
     return rows
@@ -110,6 +115,33 @@ def _body_params(data):
         'total_str': fmt_money_ru(total, sign),
         'currency_code': code,
         'stocks_full': len(data.get('stocks', {})) >= MAX_STOCKS_IN_PORTFOLIO,
+    }
+
+
+_SHORT_TITLES = {'stocks': 'Акции', 'crypto': 'Крипта', 'fiat': 'Валюты'}
+
+
+def portfolio_summary(data):
+    """Total, change over the day and split by asset type — for the card on the home page."""
+    _, sign, _ = user_currency()
+    params = _body_params(data)
+    rows = [r for c in params['categories'] for r in c['rows']]
+    total = sum(r['value'] for r in rows)
+    # Day change in money: each fresh price moved by change_pct %, so it was value / (1 + pct) a day ago
+    with_change = [r for r in rows if r.get('change_pct') is not None and r['value']]
+    day = sum(r['value'] - r['value'] / (1 + r['change_pct'] / 100) for r in with_change)
+    before = total - day
+    change_str = ''
+    if with_change and before:
+        pct = f'{abs(day / before * 100):.2f}'.replace('.', ',')
+        change_str = f"{'▲ +' if day >= 0 else '▼ −'}{fmt_money_ru(abs(day), sign)} ({'+' if day >= 0 else '−'}{pct}%) за день"
+    return {
+        'is_empty': params['is_empty'],
+        'total_str': params['total_str'],
+        'change_str': change_str,
+        'change_up': day >= 0,
+        'categories': [{'title': c['title'], 'short': _SHORT_TITLES[c['kind']], 'color': c['color'], 'sum_str': c['sum_str'],
+                        'share_str': c['share_str'], 'pct': c['pct']} for c in params['categories'] if c['rows']],
     }
 
 

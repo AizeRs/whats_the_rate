@@ -3,7 +3,9 @@ from datetime import datetime
 from sqlalchemy import or_, func, case
 from app.models.db_session import create_session
 from app.models.rates import StockRate, CryptoRate, FiatRate
-from .api_client import fetch_crypto_data, fetch_fiat_data, fetch_tickers_data
+import json
+from datetime import timedelta
+from .api_client import fetch_crypto_data, fetch_fiat_data, fetch_tickers_data, fetch_fiat_history
 
 def update_crypto_db():
     """Updates the database with the latest cryptocurrency prices."""
@@ -13,17 +15,17 @@ def update_crypto_db():
     try:
         now = datetime.now()
         with create_session() as session:
-            for line in data:
-                if not line.strip():
-                    continue
-                # Name goes last: it may contain commas
-                symbol, coin_id, price, name = line.strip().split(',', 3)
-                crypto = session.query(CryptoRate).filter(CryptoRate.coin_id == coin_id).first()
+            for coin in data:
+                crypto = session.query(CryptoRate).filter(CryptoRate.coin_id == coin['coin_id']).first()
                 if not crypto:
-                    crypto = CryptoRate(symbol=symbol, coin_id=coin_id)
+                    crypto = CryptoRate(symbol=coin['symbol'], coin_id=coin['coin_id'])
                     session.add(crypto)
-                crypto.price = float(price) if price else None
-                crypto.name = name or None
+                crypto.price = float(coin['price'])
+                crypto.change_pct = coin['change_pct']
+                crypto.change_7d_pct = coin['change_7d_pct']
+                crypto.market_cap = coin['market_cap']
+                crypto.sparkline = json.dumps(coin['sparkline']) if coin['sparkline'] else None
+                crypto.name = coin['name'] or None
                 crypto.price_updated_at = now
             session.commit()
         return True
@@ -105,7 +107,7 @@ def save_ticker_price(ticker, price, change_pct=None):
 
 def _stock_dict(r):
     return {'ticker': r.ticker, 'name': r.name, 'type': r.type, 'mic': r.mic, 'price': r.price,
-            'change_pct': r.change_pct, 'updated_at': r.price_updated_at}
+            'change_pct': r.change_pct, 'updated_at': r.price_updated_at, 'market_cap': r.market_cap}
 
 
 def get_stocks_by_letter(query, page=1, per_page=50):
@@ -160,6 +162,62 @@ def get_crypto_updated_at():
         print(e)
         return None
 
+def get_top_crypto(limit=8):
+    """The biggest coins by market cap (ids follow CoinGecko's order) — for the home page."""
+    try:
+        with create_session() as session:
+            results = session.query(CryptoRate).filter(CryptoRate.price.isnot(None)) \
+                .order_by(CryptoRate.id.asc()).limit(limit).all()
+            return [{'symbol': r.symbol, 'title': r.name or r.coin_id, 'price': r.price,
+                     'change_pct': r.change_pct, 'change_7d_pct': r.change_7d_pct, 'market_cap': r.market_cap,
+                     'sparkline': json.loads(r.sparkline) if r.sparkline else [],
+                     'updated_at': r.price_updated_at} for r in results]
+    except Exception as e:
+        print(e)
+        return []
+
+
+def save_stock_market_cap(ticker, market_cap):
+    try:
+        with create_session() as session:
+            stock = session.query(StockRate).filter(StockRate.ticker == ticker).first()
+            if stock:
+                stock.market_cap = market_cap
+                session.commit()
+    except Exception as e:
+        print(f"Error saving market cap: {e}")
+
+
+# ECB fixings for the home page sparklines: change once a day, so one request per hour per worker is plenty
+_FIAT_HISTORY_TTL = timedelta(hours=1)
+_fiat_history_cache = {'at': None, 'data': {}}
+
+
+def get_fiat_history():
+    """{date: {CODE: units per 1 USD}} for the last ~week, cached."""
+    now = datetime.now()
+    cached_at = _fiat_history_cache['at']
+    if cached_at is None or now - cached_at > _FIAT_HISTORY_TTL or not _fiat_history_cache['data']:
+        data = fetch_fiat_history()
+        if data or cached_at is None:
+            _fiat_history_cache['data'] = data
+        _fiat_history_cache['at'] = now
+    return _fiat_history_cache['data']
+
+
+def ensure_stocks(stocks):
+    """Adds the given stocks ({ticker: (name, type, mic)}) if the ticker list hasn't been loaded yet."""
+    try:
+        with create_session() as session:
+            existing = {t for (t,) in session.query(StockRate.ticker).filter(StockRate.ticker.in_(list(stocks)))}
+            for ticker, (name, stock_type, mic) in stocks.items():
+                if ticker not in existing:
+                    session.add(StockRate(ticker=ticker, name=name, type=stock_type, mic=mic))
+            session.commit()
+    except Exception as e:
+        print(f"Error adding stocks: {e}")
+
+
 def get_crypto_by_symbols(symbols):
     """Returns {SYMBOL: crypto} for the given tickers. Tickers aren't unique on CoinGecko,
     so for each one the coin with the biggest market cap (lowest id) is taken."""
@@ -172,7 +230,8 @@ def get_crypto_by_symbols(symbols):
                 .order_by(CryptoRate.id.asc()).all()
             for r in results:
                 found.setdefault(r.symbol, {'symbol': r.symbol, 'name': r.coin_id, 'title': r.name,
-                                            'price': r.price, 'updated_at': r.price_updated_at})
+                                            'price': r.price, 'change_pct': r.change_pct,
+                                            'updated_at': r.price_updated_at})
     except Exception as e:
         print(e)
     return found
@@ -206,7 +265,8 @@ def get_crypto_by_letter(letter):
 
             for r in results:
                 cryptos.append({'symbol': r.symbol, 'name': r.coin_id, 'title': r.name,
-                                'price': str(r.price) if r.price is not None else "No price data"})
+                                'price': str(r.price) if r.price is not None else "No price data",
+                                'change_pct': r.change_pct, 'updated_at': r.price_updated_at})
     except Exception as e:
         print(e)
     return cryptos

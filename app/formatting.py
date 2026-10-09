@@ -108,6 +108,18 @@ def user_currency():
     return code, sign, (rate or 1.0)
 
 
+def fmt_big_money(value, sign):
+    """Market caps: '1 621 млрд $', '4,97 трлн $'."""
+    if not value:
+        return ''
+    for limit, word in ((1e12, 'трлн'), (1e9, 'млрд'), (1e6, 'млн')):
+        if value >= limit:
+            num = value / limit
+            text = f'{num:,.2f}' if num < 10 else (f'{num:,.1f}' if num < 100 else f'{num:,.0f}')
+            return f"{text.replace(',', ' ').replace('.', ',')} {word} {sign}"
+    return fmt_money_ru(value, sign)
+
+
 def fmt_number_ru(value, max_decimals=8):
     """Formats a number Russian-style: thin-space thousands, comma decimals, no trailing zeros."""
     try:

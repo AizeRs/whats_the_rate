@@ -41,30 +41,74 @@ def fetch_quote(ticker):
         return 'ok', data
     return 'no_data', None
 
+def _downsample(values, points=42):
+    """Thins a long price series (CoinGecko gives 168 hourly points for 7 days) for a small sparkline."""
+    if not values or len(values) <= points:
+        return values or []
+    step = (len(values) - 1) / (points - 1)
+    return [values[round(i * step)] for i in range(points)]
+
+
 def fetch_crypto_data():
-    """Fetches top crypto data from CoinGecko with error handling and rate-limit safety."""
-    lines = []
+    """Fetches the top 250 coins from CoinGecko.
+
+    Returns (success, coins): each coin is a dict with symbol, coin_id, name, price, change_pct (24 h),
+    change_7d_pct, market_cap (USD) and sparkline (7 days of USD prices, thinned).
+    """
+    coins = []
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'application/json'
     }
     try:
-        url = 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=1'
+        url = ('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=1'
+               '&sparkline=true&price_change_percentage=7d')
         resp = requests.get(url, headers=headers, timeout=10)
         if resp.status_code == 200:
             data = resp.json()
             if isinstance(data, list):
                 for elem in data:
                     if isinstance(elem, dict) and elem.get("symbol") and elem.get("id") and elem.get("current_price") is not None:
-                        lines.append(
-                            f'{elem["symbol"].upper()},{elem["id"].lower()},{elem["current_price"]},{(elem.get("name") or "").strip()}\n')
-                if lines:
-                    return True, lines
+                        coins.append({
+                            'symbol': elem['symbol'].upper(),
+                            'coin_id': elem['id'].lower(),
+                            'name': (elem.get('name') or '').strip(),
+                            'price': elem['current_price'],
+                            'change_pct': elem.get('price_change_percentage_24h'),
+                            'change_7d_pct': elem.get('price_change_percentage_7d_in_currency'),
+                            'market_cap': elem.get('market_cap'),
+                            'sparkline': _downsample((elem.get('sparkline_in_7d') or {}).get('price') or []),
+                        })
+                if coins:
+                    return True, coins
         print(f"Warning: CoinGecko returned status {resp.status_code}")
         return False, []
     except Exception as e:
         print(f"Error fetching crypto data from CoinGecko: {e}")
         return False, []
+
+def fetch_stock_market_cap(ticker):
+    """Market capitalisation of a stock in USD from Finnhub's company profile, or None."""
+    try:
+        resp = requests.get('https://finnhub.io/api/v1/stock/profile2',
+                            params={'symbol': ticker, 'token': FINNHUB_APIKEY}, timeout=10)
+        cap = resp.json().get('marketCapitalization') if resp.status_code == 200 else None
+        return cap * 1_000_000 if cap else None  # Finnhub gives millions
+    except Exception as e:
+        print(f"Error fetching profile for {ticker}: {e}")
+        return None
+
+
+def fetch_fiat_history(days=7):
+    """ECB fixings of all currencies for the last days: {date: {CODE: units per 1 USD}} or {}."""
+    try:
+        start = (date.today() - timedelta(days=days)).isoformat()
+        data = requests.get(f'{FRANKFURTER_URL}/{start}..', params={'from': 'USD'}, timeout=10).json()
+        return {date.fromisoformat(d): rates for d, rates in data.get('rates', {}).items()}
+    except Exception as e:
+        print(f"Error fetching fiat history: {e}")
+        return {}
+
 
 def fetch_fiat_data():
     """Fetches currency names and the two latest ECB fixings (units per 1 USD) from Frankfurter.
