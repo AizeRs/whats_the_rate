@@ -5,7 +5,8 @@ from app.services.data_service import (
     get_top_crypto, get_stocks_by_tickers, get_all_fiats, ensure_stocks, get_fiat_history, get_crypto_updated_at
 )
 from app.formatting import (
-    price_age, fmt_change, fmt_money_ru, fmt_big_money, ticker_hue, user_currency, to_user_tz, MONTHS_GENITIVE
+    price_age, fmt_change, fmt_money_ru, fmt_big_money, ticker_hue, user_currency, to_user_tz, MONTHS_GENITIVE,
+    crypto_logo
 )
 from app.presenters import stock_row, fiat_rows, CRYPTO_AUTO_REFRESH_AFTER, FIAT_AUTO_REFRESH_AFTER
 
@@ -54,7 +55,7 @@ def _spark_points(values):
 
 def _row(**kw):
     row = {'unit': '', 'cap': '', 'spark': '', 'week': '', 'week_dir': 'flat', 'refresh': '', 'note': '',
-           'change_pct': None}
+           'change_pct': None, 'logo': None, 'logo_set': None}
     row.update(kw)
     return row
 
@@ -66,7 +67,9 @@ def _crypto_rows():
         fresh = price_age(c['updated_at'])['fresh']
         change, direction = _change(c['change_pct'] if fresh else None)
         week, week_dir = _change(c['change_7d_pct'] if fresh else None)
+        logo, logo_set = crypto_logo(c['image'])
         rows.append(_row(
+            logo=logo, logo_set=logo_set,
             rank=rank, title=c['title'], code=c['symbol'], mono=c['symbol'][:1], square=False, hue=ticker_hue(c['symbol']),
             price_str=fmt_money_ru(c['price'] / rate, sign), change_str=change, dir=direction,
             change_pct=c['change_pct'] if fresh else None,
@@ -84,7 +87,7 @@ def stock_home_row(stock):
     change, direction = _change(stock['change_pct'] if fresh else None)
     return _row(
         rank=list(STOCKS).index(r['ticker']) + 1 if r['ticker'] in STOCKS else '',
-        title=r['title'], code=r['ticker'], mono=r['ticker'][:4], square=True, hue=r['hue'],
+        title=r['title'], code=r['ticker'], mono=r['ticker'][:4], square=True, hue=r['hue'], logo=r['logo'],
         price_str=r['price_str'] or '—', change_str=change, dir=direction,
         change_pct=stock['change_pct'] if fresh else None,
         note='' if change else r['age']['label'], stale=r['needs_refresh'],

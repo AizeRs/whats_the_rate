@@ -1,4 +1,5 @@
 {# Rows of the home page quotes table. stock_row is also rendered by main.index for AJAX price refreshes. #}
+{% from "_logo.html" import logo_img %}
 {% set grid_crypto = 'lg:grid-cols-[28px_minmax(0,1fr)_112px_84px_168px_112px]' %}
 {% set grid_stocks = 'lg:grid-cols-[28px_minmax(0,1fr)_112px_84px_112px]' %}
 {% set grid_fiat = 'lg:grid-cols-[28px_minmax(0,1fr)_170px_84px_168px]' %}
@@ -7,8 +8,8 @@
 {% macro asset(r) -%}
 <span class="hidden lg:block font-label-ticker text-xs text-outline/80">{{ r.rank }}</span>
 <div class="flex items-center gap-3 min-w-0">
-    <span aria-hidden="true" class="shrink-0 w-[30px] h-[30px] flex items-center justify-center font-label-ticker font-bold {{ 'rounded-lg text-[10px]' if r.square else 'rounded-full text-[13px]' }}"
-          style="color: hsl({{ r.hue }} 85% 74%); background: hsl({{ r.hue }} 70% 55% / .15);">{{ r.mono }}</span>
+    <span aria-hidden="true" class="relative overflow-hidden shrink-0 w-[30px] h-[30px] flex items-center justify-center font-label-ticker font-bold {{ 'rounded-lg text-[10px]' if r.square else 'rounded-full text-[13px]' }}"
+          style="color: hsl({{ r.hue }} 85% 74%); background: hsl({{ r.hue }} 70% 55% / .15);">{{ r.mono }}{{ logo_img(r.logo, r.logo_set, tile=r.square) }}</span>
     <span class="text-sm font-semibold text-on-surface truncate">{{ r.title }}</span>
     <span class="hidden sm:inline font-label-ticker text-xs text-outline shrink-0">{{ r.code }}</span>
 </div>

@@ -50,8 +50,9 @@ pip install -r requirements.txt
 Файла `app/constants.py` в репозитории нет, потому что в нём лежат ключи. Создайте его сами:
 
 ```python
-FINNHUB_APIKEY = 'ваш ключ Finnhub'   # бесплатный ключ: https://finnhub.io/register
-SECRET_KEY = 'любая длинная случайная строка'
+FINNHUB_APIKEY = 'ваш ключ Finnhub'              # бесплатный ключ: https://finnhub.io/register
+LOGODEV_APIKEY = 'ваш ПУБЛИКУЕМЫЙ ключ Logo.dev'   
+SECRET_KEY = 'любая длинная случайная строка'    # виден пользователям, поэтому вставляйте именно "CDN Publishable key". Бесплатный ключ: https://www.logo.dev/signup
 HOST = '0.0.0.0'
 PORT = 5000
 ```

@@ -28,6 +28,7 @@ class CryptoRate(SqlAlchemyBase):
     change_7d_pct = sqlalchemy.Column(sqlalchemy.Float, nullable=True)  # Change over 7 days, %
     market_cap = sqlalchemy.Column(sqlalchemy.Float, nullable=True)  # USD
     sparkline = sqlalchemy.Column(sqlalchemy.Text, nullable=True)  # JSON list: 7 days of USD prices, thinned
+    image = sqlalchemy.Column(sqlalchemy.String, nullable=True)  # CoinGecko logo URL ('large', 250 px)
     price_updated_at = sqlalchemy.Column(sqlalchemy.DateTime, nullable=True)  # When the quotes were last loaded
 
 class FiatRate(SqlAlchemyBase):

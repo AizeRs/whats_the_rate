@@ -4,6 +4,7 @@
 
 {% block content %}
 {% from "_letter_filter.html" import mobile_filter %}
+{% from "_logo.html" import logo_img %}
 {% set show_portfolio = has_portfolio %}
 {% set grid_cols = 'sm:grid-cols-[40px_minmax(0,1fr)_170px_340px]' if show_portfolio else 'sm:grid-cols-[40px_minmax(0,1fr)_200px]' %}
 {% set chip_base = 'alpha-chip min-w-[36px] h-9 px-2 rounded-lg font-label-ticker text-[13px] font-medium flex items-center justify-center shrink-0 transition-colors border' %}
@@ -182,8 +183,8 @@
 
                     <!-- Asset -->
                     <div class="flex items-center gap-3 min-w-0">
-                        <span aria-hidden="true" class="w-9 h-9 rounded-full flex items-center justify-center shrink-0 font-bold text-[15px]"
-                              style="color: hsl({{ pair['hue'] }} 85% 72%); background: hsl({{ pair['hue'] }} 70% 55% / 0.14);">{{ pair['symbol'][:1]|upper }}</span>
+                        <span aria-hidden="true" class="relative overflow-hidden w-9 h-9 rounded-full flex items-center justify-center shrink-0 font-bold text-[15px]"
+                              style="color: hsl({{ pair['hue'] }} 85% 72%); background: hsl({{ pair['hue'] }} 70% 55% / 0.14);">{{ pair['symbol'][:1]|upper }}{{ logo_img(pair['logo'], pair['logo_set']) }}</span>
                         <div class="flex flex-col min-w-0">
                             <div class="flex items-baseline gap-2 min-w-0">
                                 <span class="text-[15px] text-on-surface font-semibold truncate">{{ pair['title'] }}</span>

@@ -10,7 +10,7 @@ from app.services.data_service import (
     get_stocks_by_tickers, get_crypto_by_symbols, get_all_fiats
 )
 from app.services.api_client import fetch_quote
-from app.formatting import price_age, fmt_change, fmt_money_ru, fmt_number_ru, ticker_hue, user_currency, MONTHS_GENITIVE
+from app.formatting import price_age, fmt_change, fmt_money_ru, fmt_number_ru, ticker_hue, user_currency, MONTHS_GENITIVE, crypto_logo
 from app.presenters import (
     stock_row, fiat_rows, MAX_STOCKS_IN_PORTFOLIO, STOCK_AUTO_REFRESH_AFTER, CRYPTO_AUTO_REFRESH_AFTER,
     FIAT_AUTO_REFRESH_AFTER
@@ -48,6 +48,7 @@ def _build_rows(data):
         r = stock_row(stock, stocks)
         rows['stocks'].append({
             'code': r['ticker'], 'title': r['title'], 'mono': r['ticker'][:4], 'square': True, 'hue': r['hue'],
+            'logo': r['logo'], 'logo_set': None,
             'qty': r['held'], 'qty_str': r['held_str'], 'unit': 'шт.',
             'price_str': r['price_str'], 'value': r['price_num'] * r['held'],
             'change_str': r['change_str'] if r['age']['fresh'] else '', 'change_dir': 'up' if r['change_up'] else 'down',
@@ -62,7 +63,9 @@ def _build_rows(data):
         price = coin['price'] / rate if coin['price'] is not None else None
         age = price_age(coin['updated_at'])
         change = coin.get('change_pct') if age['fresh'] else None
+        logo, logo_set = crypto_logo(coin.get('image'))
         rows['crypto'].append({
+            'logo': logo, 'logo_set': logo_set,
             'code': symbol, 'title': coin['title'] or coin['name'], 'mono': symbol[:1], 'square': False,
             'hue': ticker_hue(symbol), 'qty': qty, 'qty_str': fmt_number_ru(qty), 'unit': symbol,
             'price_str': fmt_money_ru(price, sign) if price is not None else '', 'value': (price or 0) * qty,
@@ -80,6 +83,7 @@ def _build_rows(data):
             continue
         rows['fiat'].append({
             'code': f['code'], 'title': f['title'], 'mono': f['sign'], 'square': False, 'hue': f['hue'],
+            'logo': None, 'logo_set': None,
             'qty': f['held'], 'qty_str': f['held_str'], 'unit': f['code'],
             'price_str': (f"{f['unit_str']} = " if f['unit'] > 1 else '') + f['price_str'],
             'value': f['price_num'] * f['held'],

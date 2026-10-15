@@ -26,6 +26,7 @@ def update_crypto_db():
                 crypto.market_cap = coin['market_cap']
                 crypto.sparkline = json.dumps(coin['sparkline']) if coin['sparkline'] else None
                 crypto.name = coin['name'] or None
+                crypto.image = coin['image']
                 crypto.price_updated_at = now
             session.commit()
         return True
@@ -171,7 +172,7 @@ def get_top_crypto(limit=8):
             return [{'symbol': r.symbol, 'title': r.name or r.coin_id, 'price': r.price,
                      'change_pct': r.change_pct, 'change_7d_pct': r.change_7d_pct, 'market_cap': r.market_cap,
                      'sparkline': json.loads(r.sparkline) if r.sparkline else [],
-                     'updated_at': r.price_updated_at} for r in results]
+                     'image': r.image, 'updated_at': r.price_updated_at} for r in results]
     except Exception as e:
         print(e)
         return []
@@ -231,7 +232,7 @@ def get_crypto_by_symbols(symbols):
             for r in results:
                 found.setdefault(r.symbol, {'symbol': r.symbol, 'name': r.coin_id, 'title': r.name,
                                             'price': r.price, 'change_pct': r.change_pct,
-                                            'updated_at': r.price_updated_at})
+                                            'image': r.image, 'updated_at': r.price_updated_at})
     except Exception as e:
         print(e)
     return found
@@ -266,7 +267,7 @@ def get_crypto_by_letter(letter):
             for r in results:
                 cryptos.append({'symbol': r.symbol, 'name': r.coin_id, 'title': r.name,
                                 'price': str(r.price) if r.price is not None else "No price data",
-                                'change_pct': r.change_pct, 'updated_at': r.price_updated_at})
+                                'change_pct': r.change_pct, 'image': r.image, 'updated_at': r.price_updated_at})
     except Exception as e:
         print(e)
     return cryptos

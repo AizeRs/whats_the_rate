@@ -115,6 +115,12 @@
         background-color: #2563eb !important;
         color: #ffffff !important;
       }
+      /* Asset logos (templates/_logo.html): shown over the monogram once loaded */
+      .asset-logo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; transition: opacity .2s; }
+      .has-logo, .has-logo-tile { color: transparent !important; }
+      .has-logo { background: transparent !important; }
+      .has-logo-tile { background: #fff !important; }
+      .has-logo > .asset-logo, .has-logo-tile > .asset-logo { opacity: 1; }
       .material-symbols-outlined {
         font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         display: inline-block;

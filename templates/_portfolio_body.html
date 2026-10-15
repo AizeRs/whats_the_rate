@@ -1,4 +1,5 @@
 {# Summary + tables of a portfolio. Rendered inside portfolios.html and returned by AJAX after every change. #}
+{% from "_logo.html" import logo_img %}
 {% macro age_line(r, extra='', wrap=False) %}
 {% set nowrap = '' if wrap else 'whitespace-nowrap' %}
 {% if r.age.fresh %}
@@ -85,8 +86,8 @@
          data-kind="{{ c.kind }}" data-code="{{ r.code }}" data-qty="{{ r.qty }}">
         <!-- Asset -->
         <div class="flex items-center gap-3 min-w-0 {{ 'row-span-2' if is_owner else '' }} sm:row-span-1">
-            <span aria-hidden="true" class="w-10 h-10 flex items-center justify-center shrink-0 font-bold {{ 'rounded-[10px] font-label-ticker text-xs' if r.square else ('rounded-full ' ~ ('text-base' if r.mono|length == 1 else 'text-sm')) }}"
-                  style="color: hsl({{ r.hue }} 85% 74%); background: hsl({{ r.hue }} 70% 55% / 0.14);">{{ r.mono }}</span>
+            <span aria-hidden="true" class="relative overflow-hidden w-10 h-10 flex items-center justify-center shrink-0 font-bold {{ 'rounded-[10px] font-label-ticker text-xs' if r.square else ('rounded-full ' ~ ('text-base' if r.mono|length == 1 else 'text-sm')) }}"
+                  style="color: hsl({{ r.hue }} 85% 74%); background: hsl({{ r.hue }} 70% 55% / 0.14);">{{ r.mono }}{{ logo_img(r.logo, r.logo_set, tile=r.square) }}</span>
             <div class="flex flex-col min-w-0">
                 <div class="flex items-baseline gap-2 min-w-0">
                     <span class="text-[15px] font-semibold text-on-surface truncate">{{ r.title }}</span>

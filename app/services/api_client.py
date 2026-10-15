@@ -78,6 +78,7 @@ def fetch_crypto_data():
                             'change_7d_pct': elem.get('price_change_percentage_7d_in_currency'),
                             'market_cap': elem.get('market_cap'),
                             'sparkline': _downsample((elem.get('sparkline_in_7d') or {}).get('price') or []),
+                            'image': elem.get('image') or None,
                         })
                 if coins:
                     return True, coins

@@ -1,4 +1,5 @@
 {# Shared pieces of the stocks pages. Also rendered from market_routes for AJAX price refreshes. #}
+{% from "_logo.html" import logo_img %}
 
 {% macro price_cell(row) -%}
 {% if row.price_str %}
@@ -27,8 +28,8 @@
 {%- endmacro %}
 
 {% macro monogram(row) -%}
-<span aria-hidden="true" class="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0 font-label-ticker font-bold text-xs"
-      style="color: hsl({{ row.hue }} 85% 74%); background: hsl({{ row.hue }} 70% 55% / 0.14);">{{ row.ticker[:4] }}</span>
+<span aria-hidden="true" class="relative overflow-hidden w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0 font-label-ticker font-bold text-xs"
+      style="color: hsl({{ row.hue }} 85% 74%); background: hsl({{ row.hue }} 70% 55% / 0.14);">{{ row.ticker[:4] }}{{ logo_img(row.logo, tile=True) }}</span>
 {%- endmacro %}
 
 {% macro refresh_button(row, auto=False) -%}
