@@ -264,6 +264,8 @@ def available_crypto_for_letter(letter='#'):
         
         # Handle crypto database reload action
         if request.form.get('reload_crypto') or (request.is_json and request.json.get('reload_crypto')):
+            # Counted here, not when a page offers the reload: the page may reload itself before sending it
+            _crypto_last_auto_attempt = datetime.now()
             success = update_crypto_db()
             if is_ajax:
                 return jsonify({'success': bool(success)})
@@ -345,8 +347,6 @@ def available_crypto_for_letter(letter='#'):
     is_stale = not updated_at or now - updated_at > CRYPTO_AUTO_REFRESH_AFTER
     recently_tried = _crypto_last_auto_attempt and now - _crypto_last_auto_attempt < _CRYPTO_AUTO_RETRY_AFTER
     param['auto_refresh'] = bool(is_stale and not recently_tried)
-    if param['auto_refresh']:
-        _crypto_last_auto_attempt = now
 
     return render_template('available_crypto_for_letter.html', **param)
 
@@ -366,6 +366,8 @@ def fiat():
         data = request.get_json(silent=True) or request.form
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json
         if data.get('reload_fiat'):
+            # Counted here, not when a page offers the reload: the page may reload itself before sending it
+            _fiat_last_auto_attempt = datetime.now()
             success = update_currencies_db(MAIN_SYMBOLS)
             if is_ajax:
                 return jsonify({'success': bool(success)})
@@ -383,8 +385,6 @@ def fiat():
     is_stale = not updated_at or now - updated_at > FIAT_AUTO_REFRESH_AFTER
     recently_tried = _fiat_last_auto_attempt and now - _fiat_last_auto_attempt < _FIAT_AUTO_RETRY_AFTER
     auto_refresh = bool(is_stale and not recently_tried)
-    if auto_refresh:
-        _fiat_last_auto_attempt = now
 
     param = {
         'fiats': fiat_rows(fiats, _portfolio_assets('fiat')),

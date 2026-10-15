@@ -105,8 +105,8 @@ def _stock_rows():
             continue
         row = stock_home_row(stock)
         last = _stock_attempts.get(ticker)
+
         if (row['stale'] or market_cap_is_stale(stock)) and not (last and now - last < STOCK_RETRY_AFTER):
-            _stock_attempts[ticker] = now
             row['refresh'] = ticker
             if not row['change_str']:
                 row['note'] = 'обновляется…'
@@ -121,6 +121,10 @@ def market_cap_is_stale(stock):
 
 def market_cap_loaded(ticker):
     _cap_loaded_at[ticker] = datetime.now()
+
+
+def stock_attempted(ticker):
+    _stock_attempts[ticker] = datetime.now()
 
 
 def _per_usd(rates, code):

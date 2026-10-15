@@ -25,6 +25,7 @@ def index():
         ticker = (request.get_json(silent=True) or {}).get('refresh_stock')
         if ticker not in home.STOCKS:
             return jsonify({'success': False, 'status': 'error'}), 400
+        home.stock_attempted(ticker)
         stock = next(iter(get_stocks_by_tickers([ticker])), None)
         # The price is reloaded only when it's old; the market cap — when it's missing or a day old
         status = 'ok'
@@ -45,17 +46,14 @@ def index():
 
     markets = home.home_markets()
     # Old crypto / fiat quotes are reloaded by the page itself, with the same retry limits as on their own pages
+    # (the attempt is counted when the request reaches the crypto / fiat page, not here)
     now = datetime.now()
     auto_crypto = markets['crypto_stale'] and not (
         market_routes._crypto_last_auto_attempt
         and now - market_routes._crypto_last_auto_attempt < market_routes._CRYPTO_AUTO_RETRY_AFTER)
-    if auto_crypto:
-        market_routes._crypto_last_auto_attempt = now
     auto_fiat = markets['fiat_stale'] and not (
         market_routes._fiat_last_auto_attempt
         and now - market_routes._fiat_last_auto_attempt < market_routes._FIAT_AUTO_RETRY_AFTER)
-    if auto_fiat:
-        market_routes._fiat_last_auto_attempt = now
 
     summary = None
     if current_user.is_authenticated and current_user.portfolio_id:
