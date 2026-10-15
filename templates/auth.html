@@ -142,9 +142,9 @@
                     <form action="{{ url_for('auth.register') }}" method="post" class="flex flex-col gap-[22px]" novalidate>
                         {{ rf.hidden_tag() }}
                         <div class="flex flex-col gap-0.5">
-                            {{ input(rf.username, 'Логин', placeholder='investor', autocomplete='username', extra='autocapitalize="off" spellcheck="false" required') }}
+                            {{ input(rf.username, 'Логин', placeholder='investor', autocomplete='username', extra='autocapitalize="off" spellcheck="false" maxlength="20" required') }}
                             {% if rf.username.errors %}{{ errors(rf.username) }}
-                            {% else %}<span class="mt-1.5 text-xs text-outline">Будет в ссылке на портфель. Без символа «@»</span>{% endif %}
+                            {% else %}<span class="mt-1.5 text-xs text-outline">Будет в ссылке на портфель. Латиница, цифры, «_» и «-», до 20 символов</span>{% endif %}
                         </div>
                         <div class="flex flex-col gap-0.5">
                             {{ input(rf.email, 'Электронная почта', type='email', placeholder='name@example.com', autocomplete='email', extra='inputmode="email" autocapitalize="off" spellcheck="false" required') }}

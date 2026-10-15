@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for
 from flask_login import login_user, logout_user, current_user
+from sqlalchemy import func
 from app.forms import LoginForm, RegisterForm
 from app.models import db_session
 from app.models.users import User
@@ -60,12 +61,8 @@ def register():
                 form.email.errors.append("Данный адрес электронной почты уже занят")
                 return _render_auth('register', register_form=form)
 
-            if db_sess.query(User).filter(User.username == username).first():
+            if db_sess.query(User).filter(func.lower(User.username) == username.lower()).first():
                 form.username.errors.append("Данное имя пользователя уже занято")
-                return _render_auth('register', register_form=form)
-
-            if "@" in username:
-                form.username.errors.append('Имя пользователя не должно содержать символ "@"')
                 return _render_auth('register', register_form=form)
 
             user = User(email=email, username=username)
