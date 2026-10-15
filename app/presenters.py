@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from app.services.symbols import MAIN_SYMBOLS
 from app.formatting import (
     pretty_company_name, STOCK_TYPES, EXCHANGES, price_age, fmt_change, user_currency,
-    fmt_number_ru, fmt_money_ru, ticker_hue, FIAT_INFO, fiat_unit, fmt_fiat_price
+    fmt_number_ru, fmt_money_ru, ticker_hue, FIAT_INFO, fiat_unit, fmt_fiat_price, stock_logo
 )
 
 MAX_STOCKS_IN_PORTFOLIO = 5  # Enforced by Portfolio.set_in_dict
@@ -30,6 +30,7 @@ def stock_row(stock, holdings):
                                                EXCHANGES.get(stock.get('mic'), stock.get('mic') or '')])),
         'is_etf': stock_type == 'ETP',
         'hue': ticker_hue(stock['ticker']),
+        'logo': stock_logo(stock['ticker']),
         'price_num': price or 0,
         'price_str': fmt_money_ru(price, sign) if price is not None else '',
         'change_str': fmt_change(stock.get('change_pct')),
@@ -78,6 +79,7 @@ def fiat_rows(fiats, holdings):
             'change_str': fmt_change(change) if change is not None and abs(change) >= 0.005 else ('0,00%' if change is not None else ''),
             'change_up': change is not None and change > 0,
             'change_down': change is not None and change < 0,
+            'change_pct': change,
             'held': held,
             'held_str': fmt_number_ru(held, 2) if held else '',
             'search': ' '.join([f['code'], ru, f['name'] or '']).lower(),

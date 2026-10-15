@@ -1,14 +1,197 @@
-<!DOCTYPE html>
-
-<html lang="en">
 {% extends "base.html" %}
+{% from "_home_macros.html" import crypto_row, stock_row, fiat_row, head %}
+
+{% block title %}Рынки сегодня · What's the rate{% endblock %}
+
 {% block content %}
-<head>
-    <meta charset="UTF-8">
-    <title>Главная страница · What's the rate</title>
-</head>
-<h3>Прямо сейчас вы находитесь на главной странице сайта "What's the rate". Данный сайт позволяет вам отслеживать
-    цену своего инвестиционного портфеля, состоящего из акций, валют и криптовалют.
-    Используйте навигационную панель для регистрации или входа и затем наслаждайтесь использованием сайта!</h3>
+<style>
+    body { overflow-x: clip; }
+    /* Ticker tape: slow endless scroll (the items are rendered twice), faded edges, stops on hover */
+    @keyframes home-tape { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+    .home-tape {
+        -webkit-mask-image: linear-gradient(90deg, transparent, #000 64px, #000 calc(100% - 64px), transparent);
+        mask-image: linear-gradient(90deg, transparent, #000 64px, #000 calc(100% - 64px), transparent);
+    }
+    .home-tape-track { animation: home-tape 70s linear infinite; }
+    .home-tape:hover .home-tape-track { animation-play-state: paused; }
+    @media (prefers-reduced-motion: reduce) { .home-tape-track { animation: none; } }
+    .market-panel:not(.is-active) { display: none; }
+</style>
+
+{% set card = 'rounded-2xl bg-[#141823] border border-white/[.07]' %}
+
+<!-- ============ Ticker tape (full width, right under the header) ============ -->
+{% if markets.tape %}
+<div class="home-tape relative left-1/2 w-screen -translate-x-1/2 h-10 border-b border-outline-variant/20 bg-surface-container-lowest overflow-hidden" aria-label="Котировки">
+    <div class="home-tape-track flex w-max h-full items-center font-label-ticker text-xs text-on-surface-variant">
+        {% for copy in range(2) %}
+        <div class="flex"{% if copy %} aria-hidden="true"{% endif %}>
+            {% for r in markets.tape %}
+            <span class="inline-flex items-baseline gap-2 px-[22px] border-l border-white/[.06] whitespace-nowrap">
+                <span class="font-semibold text-on-surface">{{ r.code }}</span><span>{{ r.price_str }}</span>
+                {% if r.change_str %}<span class="{{ {'up': 'text-tertiary', 'down': 'text-error'}.get(r.dir, 'text-outline') }}">{{ r.change_str }}</span>{% endif %}
+            </span>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<div class="w-full max-w-[1200px] mx-auto py-6 lg:pt-10 lg:pb-16">
+    <div class="mb-5 lg:mb-6">
+        <h1 class="text-2xl lg:text-[32px] leading-tight font-bold tracking-tight text-on-surface">Рынки сегодня</h1>
+        <p class="mt-1.5 text-sm lg:text-[15px] text-on-surface-variant">
+            {% if greeting %}{{ greeting }}, {{ current_user.username }}. {% endif %}Акции бирж США, криптовалюты и официальные курсы ЕЦБ{% if not greeting %} — без регистрации{% endif %}
+        </p>
+    </div>
+
+    <div class="grid lg:grid-cols-[minmax(0,1fr)_320px] gap-4 lg:gap-6 items-start">
+
+        <!-- ============ Quotes table ============ -->
+        <section aria-label="Котировки" class="{{ card }} overflow-hidden min-w-0">
+            <div class="flex items-center justify-between gap-4 px-4 lg:px-6 border-b border-white/[.07]">
+                <div role="tablist" class="flex gap-5 lg:gap-7">
+                    {% for tab in markets.tabs %}
+                    <button type="button" role="tab" data-tab="{{ tab.key }}" aria-selected="{{ 'true' if loop.first else 'false' }}"
+                            class="home-tab h-11 text-sm font-semibold transition-colors {{ 'text-on-surface shadow-[inset_0_-2px_0_#3b82f6]' if loop.first else 'text-outline hover:text-on-surface-variant' }}">{{ tab.label }}</button>
+                    {% endfor %}
+                </div>
+                {% for tab in markets.tabs %}
+                <span data-note="{{ tab.key }}" class="hidden lg:inline text-xs text-outline {{ '' if loop.first else 'lg:!hidden' }}">{{ tab.note }}</span>
+                {% endfor %}
+            </div>
+
+            {% for tab in markets.tabs %}
+            <div data-panel="{{ tab.key }}" class="market-panel {{ 'is-active' if loop.first }}">
+                {{ head(tab) }}
+                {% for r in tab.rows %}
+                {% if tab.key == 'crypto' %}{{ crypto_row(r) }}{% elif tab.key == 'stocks' %}{{ stock_row(r) }}{% else %}{{ fiat_row(r) }}{% endif %}
+                {% else %}
+                <div class="px-4 lg:px-6 py-8 border-t border-white/[.05] text-sm text-outline">Котировки ещё не загружены.</div>
+                {% endfor %}
+                <a href="{{ tab.url }}" class="block px-4 lg:px-6 py-3.5 border-t border-white/[.07] text-[13px] font-medium text-primary hover:underline underline-offset-4">{{ tab.link }} →</a>
+            </div>
+            {% endfor %}
+        </section>
+
+        <!-- ============ Side column ============ -->
+        <div class="flex flex-col gap-4">
+            {% if markets.movers.up or markets.movers.down %}
+            <section class="{{ card }} px-[22px] py-5">
+                <h2 class="text-[15px] font-semibold text-on-surface">Больше всего изменились</h2>
+                <p class="text-xs text-outline mt-0.5">среди активов на этой странице, за сутки</p>
+                {% for title, items, cls, empty in [('Растут', markets.movers.up, 'text-tertiary', 'Сегодня ничего не выросло'),
+                                                    ('Падают', markets.movers.down, 'text-error', 'Сегодня ничего не упало')] %}
+                <div class="text-xs font-medium text-outline mt-4 mb-1">{{ title }}</div>
+                {% for r in items %}
+                <div class="flex items-center justify-between gap-3 py-[9px] border-t border-white/[.05]">
+                    <span class="min-w-0 truncate text-sm"><span class="font-semibold text-on-surface">{{ r.title }}</span> <span class="font-label-ticker text-xs text-outline ml-1">{{ r.code }}</span></span>
+                    <span class="font-label-ticker text-[13px] font-semibold {{ cls }} whitespace-nowrap">{{ r.change_str }}</span>
+                </div>
+                {% else %}
+                <div class="py-[9px] border-t border-white/[.05] text-sm text-outline">{{ empty }}</div>
+                {% endfor %}
+                {% endfor %}
+            </section>
+            {% endif %}
+
+            {% if not current_user.is_authenticated %}
+            <section class="{{ card }} px-[22px] py-5">
+                <h2 class="text-[15px] font-semibold text-on-surface">Свой портфель</h2>
+                <p class="mt-1.5 text-[13px] leading-relaxed text-on-surface-variant">Добавьте акции, крипту и наличные — сайт посчитает общую стоимость в долларах, евро, фунтах, иенах или франках.</p>
+                <div class="flex items-center gap-3.5 mt-3.5">
+                    <a href="{{ url_for('auth.register') }}" class="h-9 px-3.5 inline-flex items-center rounded-lg border border-outline-variant hover:bg-surface-container-high text-on-surface text-sm font-medium transition-colors">Создать портфель</a>
+                    <a href="{{ url_for('auth.login') }}" class="text-[13px] font-medium text-primary hover:underline underline-offset-4">Войти</a>
+                </div>
+            </section>
+            {% elif summary and not summary.is_empty %}
+            <section class="{{ card }} px-[22px] py-5">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-[15px] font-semibold text-on-surface">Мой портфель</h2>
+                    <a href="{{ url_for('portfolio.portfolios_username', username=current_user.username) }}" class="text-[13px] font-medium text-primary hover:underline underline-offset-4">Открыть →</a>
+                </div>
+                <div class="mt-2.5 font-label-ticker text-[28px] leading-tight font-bold tracking-tight text-on-surface">{{ summary.total_str }}</div>
+                {% if summary.change_str %}
+                <div class="mt-0.5 font-label-ticker text-xs {{ 'text-tertiary' if summary.change_up else 'text-error' }}">{{ summary.change_str }}</div>
+                {% endif %}
+                <div class="flex h-2 rounded-md overflow-hidden gap-0.5 bg-surface-container-high mt-4">
+                    {% for c in summary.categories %}<span style="width: {{ c.pct }}%; background: {{ c.color }};"></span>{% endfor %}
+                </div>
+                <div class="mt-3 flex flex-col">
+                    {% for c in summary.categories %}
+                    <div class="flex items-center justify-between gap-3 py-2 {{ 'border-t border-white/[.05]' if not loop.first }} text-sm">
+                        <span class="flex items-center gap-2 text-on-surface-variant">
+                            <span class="w-2.5 h-2.5 rounded-[3px]" style="background: {{ c.color }};"></span>{{ c.short }}
+                            <span class="font-label-ticker text-xs text-outline">{{ c.share_str }}</span>
+                        </span>
+                        <span class="font-label-ticker font-semibold text-on-surface">{{ c.sum_str }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+            {% else %}
+            <section class="{{ card }} px-[22px] py-5">
+                <h2 class="text-[15px] font-semibold text-on-surface">Мой портфель</h2>
+                <p class="mt-1.5 text-[13px] leading-relaxed text-on-surface-variant">
+                    {% if current_user.portfolio_id %}Пока пусто — добавьте первый актив на страницах рынков.{% else %}Портфель ещё не создан. Его можно создать в профиле.{% endif %}
+                </p>
+                <a href="{{ url_for('portfolio.portfolios_username', username=current_user.username) if current_user.portfolio_id else url_for('main.user') }}"
+                   class="mt-3.5 h-9 px-3.5 inline-flex items-center rounded-lg border border-outline-variant hover:bg-surface-container-high text-on-surface text-sm font-medium transition-colors">
+                    {{ 'Открыть портфель' if current_user.portfolio_id else 'Создать портфель' }}
+                </a>
+            </section>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    // Tabs of the quotes table
+    const tabs = document.querySelectorAll('.home-tab');
+    tabs.forEach(function (tab) {
+        tab.addEventListener('click', function () {
+            const key = tab.dataset.tab;
+            tabs.forEach(function (t) {
+                const on = t === tab;
+                t.setAttribute('aria-selected', on);
+                t.classList.toggle('text-on-surface', on);
+                t.classList.toggle('shadow-[inset_0_-2px_0_#3b82f6]', on);
+                t.classList.toggle('text-outline', !on);
+            });
+            document.querySelectorAll('.market-panel').forEach(function (p) { p.classList.toggle('is-active', p.dataset.panel === key); });
+            document.querySelectorAll('[data-note]').forEach(function (n) { n.classList.toggle('lg:!hidden', n.dataset.note !== key); });
+        });
+    });
+
+    async function post(url, body) {
+        const resp = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            body: JSON.stringify(body)
+        });
+        return resp.json();
+    }
+
+    (async function () {
+        // Old crypto / fiat quotes: reload them on the server, then show the page again (the server limits retries)
+        let reloaded = false;
+        try {
+            {% if auto_crypto %}reloaded = (await post({{ url_for('market.crypto')|tojson }}, { reload_crypto: 1 })).success || reloaded;{% endif %}
+            {% if auto_fiat %}reloaded = (await post({{ url_for('market.fiat')|tojson }}, { reload_fiat: 1 })).success || reloaded;{% endif %}
+        } catch (err) { console.error('Error reloading quotes:', err); }
+        if (reloaded) { window.location.reload(); return; }
+
+        // Outdated stock prices: one by one, each row is replaced in place
+        for (const row of document.querySelectorAll('[data-refresh]')) {
+            try {
+                const data = await post(window.location.pathname, { refresh_stock: row.dataset.refresh });
+                if (data.html) row.outerHTML = data.html;
+                if (data.status === 'limit') break;  // Finnhub's rate limit: the rest waits for the next visit
+            } catch (err) { console.error('Error refreshing price:', err); }
+        }
+    })();
+})();
+</script>
 {% endblock %}
-</html>

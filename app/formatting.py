@@ -1,10 +1,35 @@
 """Formatting helpers shared by the market and portfolio pages: numbers, prices, names, ages."""
 from datetime import datetime, timedelta
+from urllib.parse import quote
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from flask import request, has_request_context
 from flask_login import current_user
 from app.services.symbols import MAIN_SYMBOLS
 from app.utils import format_price
+from app import constants
+
+# Logo.dev publishable key: it goes into the page, the browser loads the logos straight from their CDN
+_LOGODEV_KEY = getattr(constants, 'LOGODEV_APIKEY', '')
+
+
+def stock_logo(ticker):
+    """Logo.dev URL of a company logo by its ticker, or None without a key.
+
+    One size everywhere (40 px, 80 px for retina), so every page reuses the same cached image.
+    fallback=404: no logo -> an error, and the page keeps its own monogram instead of Logo.dev's.
+    """
+    if not _LOGODEV_KEY or not ticker:
+        return None
+    return (f'https://img.logo.dev/ticker/{quote(ticker, safe="")}?token={_LOGODEV_KEY}'
+            '&size=40&retina=true&format=webp&fallback=404')
+
+
+def crypto_logo(image_url):
+    """(src, srcset) for a CoinGecko coin image: the 50 px 'small' one, the 250 px 'large' one for retina."""
+    if not image_url:
+        return None, None
+    small = image_url.replace('/large/', '/small/')
+    return small, f'{small} 1x, {image_url} 2x'
 
 
 # Words kept as-is when prettifying Finnhub's UPPERCASE company names
@@ -106,6 +131,18 @@ def user_currency():
     code = current_user.main_currency if current_user.is_authenticated else 'USD'
     sign, rate = MAIN_SYMBOLS[code]
     return code, sign, (rate or 1.0)
+
+
+def fmt_big_money(value, sign):
+    """Market caps: '1 621 млрд $', '4,97 трлн $'."""
+    if not value:
+        return ''
+    for limit, word in ((1e12, 'трлн'), (1e9, 'млрд'), (1e6, 'млн')):
+        if value >= limit:
+            num = value / limit
+            text = f'{num:,.2f}' if num < 10 else (f'{num:,.1f}' if num < 100 else f'{num:,.0f}')
+            return f"{text.replace(',', ' ').replace('.', ',')} {word} {sign}"
+    return fmt_money_ru(value, sign)
 
 
 def fmt_number_ru(value, max_decimals=8):

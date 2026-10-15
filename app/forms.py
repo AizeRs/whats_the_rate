@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, SubmitField
-from wtforms.validators import DataRequired, Email, Length, EqualTo
+from wtforms.validators import DataRequired, Email, Length, EqualTo, Regexp
 
 REQUIRED = "Заполните это поле"
 
@@ -15,7 +15,12 @@ class LoginForm(FlaskForm):
 
 class RegisterForm(FlaskForm):
     """Form for new user registration."""
-    username = StringField('Логин', validators=[DataRequired(message=REQUIRED)])
+    # The login goes into the portfolio link (/portfolios/<login>), so only URL-safe characters
+    username = StringField('Логин', validators=[
+        DataRequired(message=REQUIRED),
+        Length(min=3, max=20, message="Логин должен быть от 3 до 20 символов"),
+        Regexp(r'^[A-Za-z0-9_-]+$', message="Только латинские буквы, цифры, «_» и «-»")
+    ])
     email = StringField('Электронная почта', validators=[DataRequired(message=REQUIRED), Email(message="Некорректный email")])
     password = PasswordField('Пароль', validators=[
         DataRequired(message=REQUIRED), 

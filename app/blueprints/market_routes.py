@@ -10,7 +10,7 @@ from app.services.data_service import (
     save_ticker_price
 )
 from app.services.api_client import fetch_quote
-from app.formatting import fmt_number_ru, fmt_money_ru, ticker_hue, user_currency, MONTHS_GENITIVE, to_user_tz
+from app.formatting import fmt_number_ru, fmt_money_ru, fmt_change, price_age, ticker_hue, user_currency, MONTHS_GENITIVE, to_user_tz, crypto_logo
 from app.presenters import (
     stock_row, fiat_rows, MAX_STOCKS_IN_PORTFOLIO, CRYPTO_AUTO_REFRESH_AFTER, FIAT_AUTO_REFRESH_AFTER
 )
@@ -264,6 +264,8 @@ def available_crypto_for_letter(letter='#'):
         
         # Handle crypto database reload action
         if request.form.get('reload_crypto') or (request.is_json and request.json.get('reload_crypto')):
+            # Counted here, not when a page offers the reload: the page may reload itself before sending it
+            _crypto_last_auto_attempt = datetime.now()
             success = update_crypto_db()
             if is_ajax:
                 return jsonify({'success': bool(success)})
@@ -320,6 +322,9 @@ def available_crypto_for_letter(letter='#'):
         except (ValueError, TypeError, ZeroDivisionError):
             price_num = None
         held = holdings.get(crypto['symbol'], 0) or 0
+        # 24 h change from CoinGecko, shown only while the quotes are fresh
+        change = crypto['change_pct'] if price_age(crypto['updated_at'])['fresh'] else None
+        logo, logo_set = crypto_logo(crypto['image'])
         param['crypto'].append({
             'rank': rank,
             'symbol': crypto['symbol'],
@@ -327,7 +332,11 @@ def available_crypto_for_letter(letter='#'):
             'title': crypto['title'] or crypto['name'],
             'price': fmt_money_ru(price_num, sign) if price_num is not None else '—',
             'price_num': price_num if price_num is not None else 0,
+            'change_str': ('0,00%' if abs(change) < 0.005 else fmt_change(change)) if change is not None else '',
+            'change_dir': 'flat' if change is None or abs(change) < 0.005 else ('up' if change > 0 else 'down'),
             'hue': ticker_hue(crypto['symbol']),
+            'logo': logo,
+            'logo_set': logo_set,
             'held': held,
             'held_str': fmt_number_ru(held) if held else '',
         })
@@ -341,8 +350,6 @@ def available_crypto_for_letter(letter='#'):
     is_stale = not updated_at or now - updated_at > CRYPTO_AUTO_REFRESH_AFTER
     recently_tried = _crypto_last_auto_attempt and now - _crypto_last_auto_attempt < _CRYPTO_AUTO_RETRY_AFTER
     param['auto_refresh'] = bool(is_stale and not recently_tried)
-    if param['auto_refresh']:
-        _crypto_last_auto_attempt = now
 
     return render_template('available_crypto_for_letter.html', **param)
 
@@ -362,6 +369,8 @@ def fiat():
         data = request.get_json(silent=True) or request.form
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json
         if data.get('reload_fiat'):
+            # Counted here, not when a page offers the reload: the page may reload itself before sending it
+            _fiat_last_auto_attempt = datetime.now()
             success = update_currencies_db(MAIN_SYMBOLS)
             if is_ajax:
                 return jsonify({'success': bool(success)})
@@ -379,8 +388,6 @@ def fiat():
     is_stale = not updated_at or now - updated_at > FIAT_AUTO_REFRESH_AFTER
     recently_tried = _fiat_last_auto_attempt and now - _fiat_last_auto_attempt < _FIAT_AUTO_RETRY_AFTER
     auto_refresh = bool(is_stale and not recently_tried)
-    if auto_refresh:
-        _fiat_last_auto_attempt = now
 
     param = {
         'fiats': fiat_rows(fiats, _portfolio_assets('fiat')),
