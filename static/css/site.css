@@ -1,0 +1,98 @@
+/* Site styles on top of the Tailwind utilities. Theme colours live in static/js/tailwind.config.js */
+
+@layer base {
+  html, body {
+    margin: 0;
+    padding: 0;
+    background-color: #0f131c;
+    color: #dfe2ef;
+  }
+  body {
+    overscroll-behavior: none;
+    overflow-x: clip;  /* full-width strips on the home and sign-in pages (left-1/2 w-screen) */
+  }
+}
+/* Same selection colours inside fields (form controls don't pick up the body's selection:* utilities) */
+input::selection, textarea::selection {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+}
+/* Asset logos (templates/_logo.html): shown over the monogram once loaded */
+.asset-logo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; transition: opacity .2s; }
+.has-logo, .has-logo-tile { color: transparent !important; }
+.has-logo { background: transparent !important; }
+.has-logo-tile { background: #fff !important; }
+.has-logo > .asset-logo, .has-logo-tile > .asset-logo { opacity: 1; }
+/* Browser autofill: keep the field's own background and text colour instead of the light-blue one */
+input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #dfe2ef;
+  caret-color: #dfe2ef;
+  transition: background-color 600000s 0s, color 600000s 0s;
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  display: inline-block;
+  vertical-align: middle;
+  line-height: 1;
+}
+
+/* ---------- Home page ---------- */
+/* Ticker tape: slow endless scroll (the items are rendered twice), faded edges, stops on hover */
+@keyframes home-tape { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.home-tape {
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 64px, #000 calc(100% - 64px), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 64px, #000 calc(100% - 64px), transparent);
+}
+.home-tape-track { animation: home-tape 70s linear infinite; }
+.home-tape:hover .home-tape-track { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { .home-tape-track { animation: none; } }
+.market-panel:not(.is-active) { display: none; }
+
+/* ---------- Market pages: the quantity editor on phones ---------- */
+@media (max-width: 639px) {
+  /* While entering a quantity the editor takes the whole row under the asset (stocks: its own line) */
+  [data-market="crypto"] .portfolio-action-container.editing { grid-column: 1 / -1; }
+  [data-market="stocks"] .portfolio-action-container.editing { grid-column: 1 / -1; grid-row: 3; }
+}
+
+/* ---------- Portfolio ---------- */
+@media (max-width: 639px) {
+  /* While editing, the quantity field and save/cancel take a separate line under the asset */
+  .asset-row.editing .qty-cell { display: flex; grid-column: 1; grid-row: 3; }
+  .asset-row.editing .row-actions { grid-row: 3; align-self: center; }
+}
+
+/* ---------- Sign-in / sign-up ---------- */
+.auth-light {
+  background: radial-gradient(ellipse 70% 55% at 50% -8%, rgba(59,130,246,.20) 0%, rgba(59,130,246,.10) 30%, rgba(59,130,246,.035) 55%, rgba(59,130,246,0) 78%);
+}
+/* Fine grain on top of the gradient: dithers the colour steps away */
+.auth-noise {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .55 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  opacity: .07;
+  mix-blend-mode: overlay;
+}
+/* The chart line lives in its own strip under the form (the page reserves that space), so it never crosses the UI */
+.auth-chart {
+  -webkit-mask-image: linear-gradient(to top, #000 0%, transparent 100%);
+  mask-image: linear-gradient(to top, #000 0%, transparent 100%);
+}
+/* «Вход / Регистрация» switch */
+.auth-tab { color: #5d6577; border-bottom: 2px solid transparent; transition: color .3s, border-color .3s; }
+.auth-tab:hover { color: #9aa0ae; }
+#auth[data-mode="login"] .auth-tab[data-switch="login"],
+#auth[data-mode="register"] .auth-tab[data-switch="register"] { color: #dfe2ef; border-bottom-color: #3b82f6; }
+/* Parts that belong to one mode fade out when the other one is active */
+#auth [data-for] { transition: opacity .45s ease, transform .45s ease; }
+#auth[data-mode="login"] [data-for="register"],
+#auth[data-mode="register"] [data-for="login"] { opacity: 0; pointer-events: none; }
+#auth[data-mode="login"] .auth-sub[data-for="register"] { transform: translateY(10px); }
+#auth[data-mode="register"] .auth-sub[data-for="login"] { transform: translateY(-10px); }
+.auth-track { transition: transform .6s cubic-bezier(.65, 0, .35, 1); }
+#auth[data-mode="register"] .auth-track { transform: translateX(-50%); }
+.auth-viewport { transition: height .6s cubic-bezier(.65, 0, .35, 1); }
+@media (prefers-reduced-motion: reduce) {
+  #auth [data-for], .auth-track, .auth-viewport, .auth-tab { transition: none; }
+}

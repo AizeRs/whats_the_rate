@@ -105,8 +105,7 @@
             {% if is_owner %}
             <div class="qty-edit hidden items-center h-9 w-[130px] rounded-lg bg-surface-container-lowest border border-blue-500 focus-within:ring-[3px] focus-within:ring-blue-500/25">
                 <input type="text" inputmode="decimal" aria-label="Количество {{ r.code }}" autocomplete="off"
-                       class="qty-input flex-1 min-w-0 h-full pl-2.5 pr-1.5 bg-transparent text-on-surface font-label-ticker text-sm text-right focus:outline-none"
-                       onkeydown="qtyKey(event, this)"/>
+                       class="qty-input flex-1 min-w-0 h-full pl-2.5 pr-1.5 bg-transparent text-on-surface font-label-ticker text-sm text-right focus:outline-none"/>
                 <span class="pr-2 text-xs text-outline">{{ r.unit }}</span>
             </div>
             {% endif %}
@@ -130,21 +129,21 @@
         {% if is_owner %}
         <div class="row-actions col-start-2 row-start-2 sm:col-start-auto sm:row-start-auto self-start sm:self-auto flex justify-end gap-1.5">
             <div class="view-actions flex gap-1.5">
-                <button type="button" onclick="editQty(this)" aria-label="Изменить количество {{ r.code }}" title="Изменить количество"
+                <button type="button" data-pf-action="edit" aria-label="Изменить количество {{ r.code }}" title="Изменить количество"
                         class="h-9 w-9 rounded-lg border border-outline-variant/50 text-outline hover:text-on-surface hover:bg-surface-container-high flex items-center justify-center transition-colors cursor-pointer">
                     <span class="material-symbols-outlined text-[17px]">edit</span>
                 </button>
-                <button type="button" onclick="removeAsset(this)" aria-label="Убрать {{ r.code }} из портфеля" title="Убрать из портфеля"
+                <button type="button" data-pf-action="remove" aria-label="Убрать {{ r.code }} из портфеля" title="Убрать из портфеля"
                         class="h-9 w-9 rounded-lg border border-outline-variant/50 text-outline hover:text-on-surface hover:bg-surface-container-high flex items-center justify-center transition-colors cursor-pointer">
                     <span class="material-symbols-outlined text-[17px]">delete</span>
                 </button>
             </div>
             <div class="edit-actions hidden gap-1.5">
-                <button type="button" onclick="saveQty(this)" aria-label="Сохранить количество"
+                <button type="button" data-pf-action="save" aria-label="Сохранить количество"
                         class="save-btn h-9 w-9 rounded-lg bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center transition-colors cursor-pointer">
                     <span class="material-symbols-outlined text-[18px]">check</span>
                 </button>
-                <button type="button" onclick="cancelEdit(this)" aria-label="Отмена"
+                <button type="button" data-pf-action="cancel" aria-label="Отмена"
                         class="h-9 w-9 rounded-lg border border-outline-variant/50 text-outline hover:text-on-surface hover:bg-surface-container-high flex items-center justify-center transition-colors cursor-pointer">
                     <span class="material-symbols-outlined text-[16px]">close</span>
                 </button>

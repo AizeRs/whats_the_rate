@@ -13,129 +13,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
     
-    <script>
-        // Remember the visitor's timezone so the server can show update times in it
-        (function () {
-            try {
-                var tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-                var had = document.cookie.indexOf('tz=' + encodeURIComponent(tz)) !== -1;
-                if (tz && !had) {
-                    document.cookie = 'tz=' + encodeURIComponent(tz) + ';path=/;max-age=31536000;SameSite=Lax';
-                    // First visit (or timezone changed): reload once so the page is rendered with the right time
-                    if (document.cookie.indexOf('tz=' + encodeURIComponent(tz)) !== -1 && !sessionStorage.getItem('tzReloaded')) {
-                        sessionStorage.setItem('tzReloaded', '1');
-                        location.reload();
-                    }
-                }
-            } catch (e) {}
-        })();
-    </script>
+    <script src="{{ url_for('static', filename='js/site.js') }}"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script id="tailwind-config">
-    tailwind.config = {
-      darkMode: "class",
-      theme: {
-        extend: {
-          colors: {
-            "surface-container-lowest": "#0a0e17",
-            "surface-dim": "#0f131c",
-            "surface": "#0f131c",
-            "surface-container-low": "#181b25",
-            "surface-container": "#1c1f29",
-            "surface-container-high": "#262a34",
-            "surface-container-highest": "#31353f",
-            "surface-bright": "#353943",
-            "surface-variant": "#31353f",
-            "background": "#0f131c",
-            "on-background": "#dfe2ef",
-            "on-surface": "#dfe2ef",
-            "on-surface-variant": "#c2c6d6",
-            "outline": "#8c909f",
-            "outline-variant": "#424754",
-            "primary": "#adc6ff",
-            "primary-container": "#3b82f6",
-            "on-primary": "#002e6a",
-            "on-primary-container": "#ffffff",
-            "primary-fixed": "#d8e2ff",
-            "secondary": "#c0c1ff",
-            "secondary-container": "#3131c0",
-            "tertiary": "#4edea3",
-            "tertiary-container": "#00a572",
-            "error": "#ffb4ab",
-            "error-container": "#93000a",
-            "on-error": "#690005"
-          },
-          borderRadius: {
-            "DEFAULT": "0.25rem",
-            "lg": "0.5rem",
-            "xl": "0.75rem",
-            "2xl": "1rem",
-            "full": "9999px"
-          },
-          spacing: {
-            "gutter-desktop": "1.5rem",
-            "space-xs": "0.25rem",
-            "space-sm": "0.5rem",
-            "space-md": "1rem",
-            "space-lg": "1.5rem",
-            "space-xl": "2rem",
-            "margin": "1.5rem",
-            "margin-desktop": "2.5rem"
-          },
-          fontFamily: {
-            "body-lg": ["Inter", "sans-serif"],
-            "body-md": ["Inter", "sans-serif"],
-            "body-sm": ["Inter", "sans-serif"],
-            "headline-lg": ["Inter", "sans-serif"],
-            "headline-md": ["Inter", "sans-serif"],
-            "display-lg": ["Inter", "sans-serif"],
-            "label-numeric-sm": ["JetBrains Mono", "monospace"],
-            "label-numeric-md": ["JetBrains Mono", "monospace"],
-            "label-numeric-lg": ["JetBrains Mono", "monospace"],
-            "label-ticker": ["JetBrains Mono", "monospace"]
-          }
-        }
-      }
-    };
-    </script>
-    <style>
-      @layer base {
-        html, body {
-          margin: 0;
-          padding: 0;
-          background-color: #0f131c;
-          color: #dfe2ef;
-        }
-        body {
-          overscroll-behavior: none;
-        }
-      }
-      /* Same selection colours inside fields (form controls don't pick up the body's selection:* utilities) */
-      input::selection, textarea::selection {
-        background-color: #2563eb !important;
-        color: #ffffff !important;
-      }
-      /* Asset logos (templates/_logo.html): shown over the monogram once loaded */
-      .asset-logo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; transition: opacity .2s; }
-      .has-logo, .has-logo-tile { color: transparent !important; }
-      .has-logo { background: transparent !important; }
-      .has-logo-tile { background: #fff !important; }
-      .has-logo > .asset-logo, .has-logo-tile > .asset-logo { opacity: 1; }
-      /* Browser autofill: keep the field's own background and text colour instead of the light-blue one */
-      input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus {
-        -webkit-text-fill-color: #dfe2ef;
-        caret-color: #dfe2ef;
-        transition: background-color 600000s 0s, color 600000s 0s;
-        -webkit-background-clip: text;
-        background-clip: text;
-      }
-      .material-symbols-outlined {
-        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        display: inline-block;
-        vertical-align: middle;
-        line-height: 1;
-      }
-    </style>
+    <script src="{{ url_for('static', filename='js/tailwind.config.js') }}"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}">
 </head>
 <body class="bg-background font-body-md text-body-md text-on-surface min-h-screen min-h-[100dvh] flex flex-col pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0 selection:bg-blue-600 selection:text-white">
     <!-- Header / Top Navbar -->
@@ -221,5 +102,7 @@
             {% endfor %}
         </div>
     </nav>
+    <script src="{{ url_for('static', filename='js/common.js') }}"></script>
+    {% block scripts %}{% endblock %}
 </body>
 </html>

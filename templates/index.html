@@ -4,19 +4,6 @@
 {% block title %}Рынки сегодня · What's the rate{% endblock %}
 
 {% block content %}
-<style>
-    body { overflow-x: clip; }
-    /* Ticker tape: slow endless scroll (the items are rendered twice), faded edges, stops on hover */
-    @keyframes home-tape { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-    .home-tape {
-        -webkit-mask-image: linear-gradient(90deg, transparent, #000 64px, #000 calc(100% - 64px), transparent);
-        mask-image: linear-gradient(90deg, transparent, #000 64px, #000 calc(100% - 64px), transparent);
-    }
-    .home-tape-track { animation: home-tape 70s linear infinite; }
-    .home-tape:hover .home-tape-track { animation-play-state: paused; }
-    @media (prefers-reduced-motion: reduce) { .home-tape-track { animation: none; } }
-    .market-panel:not(.is-active) { display: none; }
-</style>
 
 {% set card = 'rounded-2xl bg-[#141823] border border-white/[.07]' %}
 
@@ -38,7 +25,8 @@
 </div>
 {% endif %}
 
-<div class="w-full max-w-[1200px] mx-auto py-6 lg:pt-10 lg:pb-16">
+<div class="w-full max-w-[1200px] mx-auto py-6 lg:pt-10 lg:pb-16" data-home
+     data-crypto-url="{{ url_for('market.crypto') }}" data-fiat-url="{{ url_for('market.fiat') }}"{% if auto_crypto %} data-auto-crypto{% endif %}{% if auto_fiat %} data-auto-fiat{% endif %}>
     <div class="mb-5 lg:mb-6">
         <h1 class="text-2xl lg:text-[32px] leading-tight font-bold tracking-tight text-on-surface">Рынки сегодня</h1>
         <p class="mt-1.5 text-sm lg:text-[15px] text-on-surface-variant">
@@ -146,52 +134,8 @@
     </div>
 </div>
 
-<script>
-(function () {
-    // Tabs of the quotes table
-    const tabs = document.querySelectorAll('.home-tab');
-    tabs.forEach(function (tab) {
-        tab.addEventListener('click', function () {
-            const key = tab.dataset.tab;
-            tabs.forEach(function (t) {
-                const on = t === tab;
-                t.setAttribute('aria-selected', on);
-                t.classList.toggle('text-on-surface', on);
-                t.classList.toggle('shadow-[inset_0_-2px_0_#3b82f6]', on);
-                t.classList.toggle('text-outline', !on);
-            });
-            document.querySelectorAll('.market-panel').forEach(function (p) { p.classList.toggle('is-active', p.dataset.panel === key); });
-            document.querySelectorAll('[data-note]').forEach(function (n) { n.classList.toggle('lg:!hidden', n.dataset.note !== key); });
-        });
-    });
+{% endblock %}
 
-    async function post(url, body) {
-        const resp = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-            body: JSON.stringify(body)
-        });
-        return resp.json();
-    }
-
-    (async function () {
-        // Old crypto / fiat quotes: reload them on the server, then show the page again (the server limits retries)
-        let reloaded = false;
-        try {
-            {% if auto_crypto %}reloaded = (await post({{ url_for('market.crypto')|tojson }}, { reload_crypto: 1 })).success || reloaded;{% endif %}
-            {% if auto_fiat %}reloaded = (await post({{ url_for('market.fiat')|tojson }}, { reload_fiat: 1 })).success || reloaded;{% endif %}
-        } catch (err) { console.error('Error reloading quotes:', err); }
-        if (reloaded) { window.location.reload(); return; }
-
-        // Outdated stock prices: one by one, each row is replaced in place
-        for (const row of document.querySelectorAll('[data-refresh]')) {
-            try {
-                const data = await post(window.location.pathname, { refresh_stock: row.dataset.refresh });
-                if (data.html) row.outerHTML = data.html;
-                if (data.status === 'limit') break;  // Finnhub's rate limit: the rest waits for the next visit
-            } catch (err) { console.error('Error refreshing price:', err); }
-        }
-    })();
-})();
-</script>
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/home.js') }}"></script>
 {% endblock %}

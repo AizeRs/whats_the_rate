@@ -22,7 +22,7 @@
            {% if field.errors %}aria-invalid="true"{% endif %}
            class="flex-1 min-w-0 h-11 bg-transparent border-0 p-0 text-on-surface text-base lg:text-[17px] placeholder:text-outline/60 focus:outline-none focus:ring-0">
     {% if password %}
-    <button type="button" onclick="togglePassword(this)" aria-label="Показать пароль"
+    <button type="button" data-toggle-password aria-label="Показать пароль"
             class="shrink-0 -mr-1.5 w-9 h-9 rounded-md text-outline hover:text-on-surface flex items-center justify-center transition-colors">
         <span class="material-symbols-outlined text-[19px]">visibility</span>
     </button>
@@ -34,40 +34,6 @@
 {% set lf = login_form %}
 {% set rf = register_form %}
 
-<style>
-    body { overflow-x: clip; }
-    .auth-light {
-        background: radial-gradient(ellipse 70% 55% at 50% -8%, rgba(59,130,246,.20) 0%, rgba(59,130,246,.10) 30%, rgba(59,130,246,.035) 55%, rgba(59,130,246,0) 78%);
-    }
-    /* Fine grain on top of the gradient: dithers the colour steps away */
-    .auth-noise {
-        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .55 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
-        opacity: .07;
-        mix-blend-mode: overlay;
-    }
-    /* The chart line lives in its own strip under the form (the page reserves that space), so it never crosses the UI */
-    .auth-chart {
-        -webkit-mask-image: linear-gradient(to top, #000 0%, transparent 100%);
-        mask-image: linear-gradient(to top, #000 0%, transparent 100%);
-    }
-    /* «Вход / Регистрация» switch */
-    .auth-tab { color: #5d6577; border-bottom: 2px solid transparent; transition: color .3s, border-color .3s; }
-    .auth-tab:hover { color: #9aa0ae; }
-    #auth[data-mode="login"] .auth-tab[data-switch="login"],
-    #auth[data-mode="register"] .auth-tab[data-switch="register"] { color: #dfe2ef; border-bottom-color: #3b82f6; }
-    /* Parts that belong to one mode fade out when the other one is active */
-    [data-for] { transition: opacity .45s ease, transform .45s ease; }
-    #auth[data-mode="login"] [data-for="register"],
-    #auth[data-mode="register"] [data-for="login"] { opacity: 0; pointer-events: none; }
-    #auth[data-mode="login"] .auth-sub[data-for="register"] { transform: translateY(10px); }
-    #auth[data-mode="register"] .auth-sub[data-for="login"] { transform: translateY(-10px); }
-    .auth-track { transition: transform .6s cubic-bezier(.65, 0, .35, 1); }
-    #auth[data-mode="register"] .auth-track { transform: translateX(-50%); }
-    .auth-viewport { transition: height .6s cubic-bezier(.65, 0, .35, 1); }
-    @media (prefers-reduced-motion: reduce) {
-        [data-for], .auth-track, .auth-viewport, .auth-tab { transition: none; }
-    }
-</style>
 
 <div id="auth" data-mode="{{ mode }}"
      data-login-url="{{ url_for('auth.login') }}" data-register-url="{{ url_for('auth.register') }}"
@@ -167,67 +133,8 @@
     </div>
 </div>
 
-<script>
-function togglePassword(btn) {
-    const input = btn.parentElement.querySelector('input');
-    const show = input.type === 'password';
-    input.type = show ? 'text' : 'password';
-    btn.querySelector('span').textContent = show ? 'visibility_off' : 'visibility';
-    btn.setAttribute('aria-label', show ? 'Скрыть пароль' : 'Показать пароль');
-}
+{% endblock %}
 
-(function () {
-    const root = document.getElementById('auth');
-    const viewport = root.querySelector('.auth-viewport');
-    const titles = { login: 'Вход', register: 'Регистрация' };
-    const urls = { login: root.dataset.loginUrl, register: root.dataset.registerUrl };
-    const desktop = window.matchMedia('(min-width: 1024px)');
-
-    // The two forms differ in height: the viewport follows the visible one
-    function fitHeight() {
-        viewport.style.height = root.querySelector('[data-pane="' + root.dataset.mode + '"]').offsetHeight + 'px';
-    }
-
-    function markPanes() {
-        root.querySelectorAll('[data-pane]').forEach(function (pane) {
-            const hidden = pane.dataset.pane !== root.dataset.mode;
-            pane.inert = hidden;
-            pane.setAttribute('aria-hidden', hidden);
-        });
-        root.querySelectorAll('.auth-tab').forEach(function (tab) {
-            if (tab.dataset.switch === root.dataset.mode) tab.setAttribute('aria-current', 'page');
-            else tab.removeAttribute('aria-current');
-        });
-    }
-
-    function setMode(mode, push) {
-        if (mode === root.dataset.mode) return;
-        root.dataset.mode = mode;
-        markPanes();
-        document.title = titles[mode] + " · What's the rate";
-        fitHeight();
-        if (push) history.pushState({ authMode: mode }, '', urls[mode]);
-        const first = root.querySelector('[data-pane="' + mode + '"] input:not([type=hidden])');
-        if (first && desktop.matches) setTimeout(function () { first.focus({ preventScroll: true }); }, 450);
-    }
-
-    root.querySelectorAll('[data-switch]').forEach(function (link) {
-        link.addEventListener('click', function (e) {
-            e.preventDefault();
-            setMode(link.dataset.switch, true);
-        });
-    });
-    window.addEventListener('popstate', function () {
-        setMode(location.pathname.replace(/\/$/, '').endsWith('register') ? 'register' : 'login', false);
-    });
-    window.addEventListener('resize', fitHeight);
-    // Web fonts change the height of the panes once they arrive
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitHeight);
-
-    // Initial state: hide the inactive form from keyboard and screen readers (no animation)
-    markPanes();
-    fitHeight();
-    history.replaceState({ authMode: root.dataset.mode }, '', location.href);
-})();
-</script>
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
 {% endblock %}

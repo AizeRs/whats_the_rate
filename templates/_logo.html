@@ -1,8 +1,8 @@
 {# Logo over a monogram: the image stays invisible until it loads, so a missing or broken logo leaves the monogram.
-   tile=True: a white rounded tile under the image (company logos come both with and without a background). #}
+   tile=True: a white rounded tile under the image (company logos come both with and without a background).
+   Showing / dropping the image: static/js/site.js #}
 {% macro logo_img(src, srcset=None, tile=False) -%}
 {%- if src -%}
-<img src="{{ src }}"{% if srcset %} srcset="{{ srcset }}"{% endif %} alt="" loading="lazy" decoding="async" class="asset-logo"
-     onload="this.parentNode.classList.add('{{ 'has-logo-tile' if tile else 'has-logo' }}')" onerror="this.remove()">
+<img src="{{ src }}"{% if srcset %} srcset="{{ srcset }}"{% endif %} alt="" loading="lazy" decoding="async" class="asset-logo"{% if tile %} data-tile="1"{% endif %}>
 {%- endif -%}
 {%- endmacro %}

@@ -33,7 +33,7 @@
 {%- endmacro %}
 
 {% macro refresh_button(row, auto=False) -%}
-<button type="button" onclick="refreshPrice(this)" data-ticker="{{ row.ticker }}"{% if auto and row.needs_refresh %} data-auto-refresh="1"{% endif %}
+<button type="button" data-ticker="{{ row.ticker }}"{% if auto and row.needs_refresh %} data-auto-refresh="1"{% endif %}
         class="refresh-btn h-9 w-9 rounded-lg border border-outline-variant/50 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high flex items-center justify-center transition-colors cursor-pointer disabled:cursor-wait"
         aria-label="Обновить цену {{ row.ticker }}" title="Обновить цену">
     <span class="material-symbols-outlined text-[18px]">sync</span>
