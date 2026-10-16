@@ -1,6 +1,6 @@
 """Formatting helpers shared by the market and portfolio pages: numbers, prices, names, ages."""
 from datetime import datetime, timedelta
-from urllib.parse import quote
+from urllib.parse import quote, unquote
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from flask import request, has_request_context
 from flask_login import current_user
@@ -80,7 +80,8 @@ EXCHANGES = {'XNAS': 'NASDAQ', 'XNYS': 'NYSE', 'ARCX': 'NYSE Arca', 'XASE': 'NYS
 def to_user_tz(moment):
     """Server-local naive datetime -> naive datetime in the visitor's timezone (browser sets the 'tz' cookie).
     Only for DISPLAY: all stored values and age arithmetic stay in server time."""
-    name = request.cookies.get('tz') if has_request_context() else None
+    # The browser stores it URL-encoded ("Europe%2FMoscow"), and Werkzeug doesn't decode cookie values
+    name = unquote(request.cookies.get('tz', '')) if has_request_context() else None
     if not moment or not name:
         return moment
     try:
