@@ -127,6 +127,16 @@
             </div>
         </div>
 
+        <!-- Shared demo account: no password in the page, the server signs in by itself -->
+        <form action="{{ url_for('auth.demo_login') }}" method="post" class="mt-4">
+            <input type="hidden" name="csrf_token" value="{{ lf.csrf_token.current_token }}">
+            <button type="submit"
+                    class="w-full h-12 rounded-lg border border-outline-variant/70 hover:border-outline hover:bg-surface-container text-on-surface text-base font-medium transition-colors flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined text-[19px] text-primary">visibility</span>
+                Посмотреть демо-аккаунт
+            </button>
+        </form>
+
         <p class="mt-7 text-[13px] text-outline">
             Курсы можно смотреть и без входа — <a href="{{ url_for('main.index') }}" class="text-primary hover:underline underline-offset-4">открыть котировки →</a>
         </p>

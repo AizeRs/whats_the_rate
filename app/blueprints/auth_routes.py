@@ -1,11 +1,21 @@
-from flask import Blueprint, render_template, redirect, url_for
+import secrets
+from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import login_user, logout_user, current_user
+from flask_wtf.csrf import validate_csrf
+from wtforms import ValidationError
 from sqlalchemy import func
 from app.forms import LoginForm, RegisterForm
 from app.models import db_session
 from app.models.users import User
+from app.models.portfolios import Portfolio
 
 auth_bp = Blueprint('auth', __name__)
+
+# Shared demo account: entered only with the button on the sign-in page
+DEMO_USERNAME = 'demo'
+DEMO_PORTFOLIO = {'stocks': {'AAPL': 5, 'NVDA': 5, 'MSFT': 5},
+                  'crypto': {'BTC': 0.05, 'ETH': 1, 'SOL': 5},
+                  'fiat': {'EUR': 500, 'GBP': 500}}
 
 def _render_auth(mode, login_form=None, register_form=None, message=None):
     """Login and registration live on one page (auth.html); `mode` picks the form shown first."""
@@ -37,6 +47,27 @@ def login():
     return _render_auth('login', login_form=form)
 
 
+@auth_bp.route('/login/demo', methods=['POST'])
+def demo_login():
+    """Signs in to the shared demo account (created with a filled public portfolio on first use)."""
+    try:
+        validate_csrf(request.form.get('csrf_token'))
+    except ValidationError:
+        return redirect(url_for('auth.login'))
+    with db_session.create_session() as db_sess:
+        user = db_sess.query(User).filter(User.username == DEMO_USERNAME).first()
+        if not user:
+            portfolio = Portfolio(isprivate=False, contains=DEMO_PORTFOLIO)
+            db_sess.add(portfolio)
+            db_sess.flush()
+            user = User(username=DEMO_USERNAME, email='demo@example.com', portfolio_id=portfolio.id)
+            user.set_password(secrets.token_urlsafe(32))
+            db_sess.add(user)
+            db_sess.commit()
+        login_user(user, remember=False)
+    return redirect(url_for('main.index'))
+
+
 @auth_bp.route('/logout')
 def logout():
     """Logs out the current user."""
@@ -61,7 +92,8 @@ def register():
                 form.email.errors.append("Данный адрес электронной почты уже занят")
                 return _render_auth('register', register_form=form)
 
-            if db_sess.query(User).filter(func.lower(User.username) == username.lower()).first():
+            if username.lower() == DEMO_USERNAME or \
+                    db_sess.query(User).filter(func.lower(User.username) == username.lower()).first():
                 form.username.errors.append("Данное имя пользователя уже занято")
                 return _render_auth('register', register_form=form)
 

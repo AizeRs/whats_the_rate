@@ -9,6 +9,7 @@ from app.services.data_service import get_stocks_by_tickers, save_ticker_price, 
 from app.services.api_client import fetch_quote, fetch_stock_market_cap
 from app.blueprints.portfolio_routes import portfolio_summary
 from app.blueprints import market_routes
+from app.blueprints.auth_routes import DEMO_USERNAME
 from app import home
 from datetime import datetime
 import os
@@ -116,7 +117,10 @@ def user():
                 current_user.apikey = apikey
                 
             if pass_form.submit_pass.data:
-                if pass_form.validate():
+                if current_user.username == DEMO_USERNAME:
+                    pass_form.old_password.errors = ['В демо-аккаунте пароль не меняется']
+                    param['pass_submit'] = 1
+                elif pass_form.validate():
                     if not current_user.check_password(pass_form.old_password.data):
                         pass_form.old_password.errors = ['Неверный пароль']
                         param['pass_submit'] = 1
