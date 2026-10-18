@@ -45,7 +45,7 @@
                 <span class="material-symbols-outlined text-[20px] text-outline absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none">search</span>
                 <input type="search" id="fiatSearch" data-search-input autocomplete="off"
                        placeholder="Код или название — например, EUR, иена, Swiss"
-                       class="w-full h-12 pl-11 pr-11 rounded-lg bg-surface-container-lowest text-on-surface placeholder-outline font-body-md text-body-md border border-outline-variant/50 focus:outline-none focus:border-blue-500 focus:ring-[3px] focus:ring-blue-500/20 transition-all [&::-webkit-search-cancel-button]:hidden">
+                       class="w-full h-12 pl-11 pr-11 rounded-lg bg-surface-container-lowest text-on-surface placeholder-outline font-body-md text-body-md border border-outline-variant/50 focus:outline-none focus:border-accent-500 focus:ring-[3px] focus:ring-accent-500/20 transition-all [&::-webkit-search-cancel-button]:hidden">
                 <button type="button" data-search-clear aria-label="Очистить поиск"
                         class="hidden absolute right-1.5 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center text-outline hover:text-on-surface rounded-lg transition-colors">
                     <span class="material-symbols-outlined text-[18px]">close</span>
@@ -64,9 +64,9 @@
             </div>
 
             {% if not current_user.is_authenticated %}
-            <div class="mx-5 mb-4 pl-4 pr-3 py-3 flex items-center justify-between gap-3 flex-wrap rounded-lg bg-blue-500/10 border border-blue-400/25">
+            <div class="mx-5 mb-4 pl-4 pr-3 py-3 flex items-center justify-between gap-3 flex-wrap rounded-lg bg-accent-500/10 border border-accent-400/25">
                 <span class="text-sm text-on-surface-variant">Войдите, чтобы добавлять валюты в портфель и следить за их стоимостью</span>
-                <a href="{{ url_for('auth.login') }}" class="h-9 px-3.5 inline-flex items-center rounded-lg border border-blue-400/50 text-primary text-sm font-semibold hover:bg-blue-500/10 transition-colors">Войти</a>
+                <a href="{{ url_for('auth.login') }}" class="h-9 px-3.5 inline-flex items-center rounded-lg border border-accent-400/50 text-primary text-sm font-semibold hover:bg-accent-500/10 transition-colors">Войти</a>
             </div>
             {% endif %}
 

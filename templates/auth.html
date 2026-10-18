@@ -15,7 +15,7 @@
 {# A field without a box: a label and an input on an underline #}
 {% macro input(field, label, type='text', placeholder='', autocomplete='', extra='', password=False) -%}
 <label for="{{ field.id }}" class="text-xs font-medium text-outline">{{ label }}</label>
-<div class="auth-line flex items-center border-b {{ 'border-error/70 focus-within:border-error' if field.errors else 'border-outline-variant/70 focus-within:border-blue-500' }} transition-colors">
+<div class="auth-line flex items-center border-b {{ 'border-error/70 focus-within:border-error' if field.errors else 'border-outline-variant/70 focus-within:border-accent-500' }} transition-colors">
     <input type="{{ type }}" name="{{ field.name }}" id="{{ field.id }}"
            {% if type != 'password' %}value="{{ field.data or '' }}"{% endif %}
            placeholder="{{ placeholder }}" autocomplete="{{ autocomplete }}" {{ extra|safe }}
@@ -44,7 +44,7 @@
         <svg viewBox="0 0 1440 300" preserveAspectRatio="none"
              class="auth-chart absolute inset-x-0 bottom-0 w-full h-[96px] sm:h-[134px] lg:h-[174px] opacity-[.55]">
             <polyline points="0,280 48,266 96,273 144,252 192,258 240,233 288,240 336,219 384,227 432,198 480,207 528,186 576,193 624,172 672,181 720,160 768,169 816,143 864,152 912,136 960,145 1008,121 1056,128 1104,114 1152,123 1200,102 1248,111 1296,95 1344,102 1392,88 1440,95"
-                      fill="none" stroke="#3b82f6" stroke-width="1.5" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+                      fill="none" stroke="#00a2c7" stroke-width="1.5" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
         </svg>
         <div class="absolute inset-0 auth-noise"></div>
     </div>
@@ -53,7 +53,7 @@
         <!-- Switch -->
         <div class="flex items-baseline gap-3 sm:gap-4 text-[28px] sm:text-[34px] leading-tight font-semibold tracking-tight">
             <a href="{{ url_for('auth.login') }}" data-switch="login" class="auth-tab pb-1.5"{% if not is_reg %} aria-current="page"{% endif %}>Вход</a>
-            <span aria-hidden="true" class="font-light text-[#394052]">/</span>
+            <span aria-hidden="true" class="font-light text-outline-variant">/</span>
             <a href="{{ url_for('auth.register') }}" data-switch="register" class="auth-tab pb-1.5"{% if is_reg %} aria-current="page"{% endif %}>Регистрация</a>
         </div>
         <div class="grid mt-3.5">
@@ -86,14 +86,14 @@
                         <div class="flex items-center justify-between gap-3">
                             <label class="flex items-center gap-2.5 min-h-8 cursor-pointer select-none text-sm text-on-surface-variant">
                                 <input type="checkbox" name="{{ lf.remember_me.name }}" id="{{ lf.remember_me.id }}" {% if lf.remember_me.data %}checked{% endif %} class="peer sr-only">
-                                <span class="w-5 h-5 lg:w-4 lg:h-4 rounded-[5px] lg:rounded border border-outline-variant bg-surface-container-lowest flex items-center justify-center text-transparent peer-checked:bg-blue-600 peer-checked:border-blue-600 peer-checked:text-white peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500/50 transition-colors">
+                                <span class="w-5 h-5 lg:w-4 lg:h-4 rounded-[5px] lg:rounded border border-outline-variant bg-surface-container-lowest flex items-center justify-center text-transparent peer-checked:bg-accent-600 peer-checked:border-accent-600 peer-checked:text-on-accent peer-focus-visible:ring-2 peer-focus-visible:ring-accent-500/50 transition-colors">
                                     <span class="material-symbols-outlined text-[14px] lg:text-[13px]">check</span>
                                 </span>
                                 Запомнить меня
                             </label>
                             <a href="#" class="text-sm text-on-surface-variant hover:text-on-surface hover:underline underline-offset-4">Забыли пароль?</a>
                         </div>
-                        <button type="submit" class="mt-1 h-12 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-base font-semibold transition-colors">Войти</button>
+                        <button type="submit" class="mt-1 h-12 rounded-lg bg-accent-600 hover:bg-accent-500 text-on-accent text-base font-semibold transition-colors">Войти</button>
                     </form>
                 </div>
 
@@ -120,7 +120,7 @@
                             {{ input(rf.password, 'Пароль', type='password', placeholder='Минимум 5 символов', autocomplete='new-password', extra='minlength="5" required', password=True) }}
                             {{ errors(rf.password) }}
                         </div>
-                        <button type="submit" class="mt-1 h-12 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-base font-semibold transition-colors">Создать аккаунт</button>
+                        <button type="submit" class="mt-1 h-12 rounded-lg bg-accent-600 hover:bg-accent-500 text-on-accent text-base font-semibold transition-colors">Создать аккаунт</button>
                     </form>
                 </div>
 

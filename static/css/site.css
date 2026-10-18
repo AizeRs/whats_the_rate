@@ -4,8 +4,8 @@
   html, body {
     margin: 0;
     padding: 0;
-    background-color: #0f131c;
-    color: #dfe2ef;
+    background-color: #101211;
+    color: #eceeed;
   }
   body {
     overscroll-behavior: none;
@@ -14,8 +14,8 @@
 }
 /* Same selection colours inside fields (form controls don't pick up the body's selection:* utilities) */
 input::selection, textarea::selection {
-  background-color: #2563eb !important;
-  color: #ffffff !important;
+  background-color: #00a2c7 !important;
+  color: #101211 !important;
 }
 /* Asset logos (templates/_logo.html): shown over the monogram once loaded */
 .asset-logo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; transition: opacity .2s; }
@@ -25,8 +25,8 @@ input::selection, textarea::selection {
 .has-logo > .asset-logo, .has-logo-tile > .asset-logo { opacity: 1; }
 /* Browser autofill: keep the field's own background and text colour instead of the light-blue one */
 input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus {
-  -webkit-text-fill-color: #dfe2ef;
-  caret-color: #dfe2ef;
+  -webkit-text-fill-color: #eceeed;
+  caret-color: #eceeed;
   transition: background-color 600000s 0s, color 600000s 0s;
   -webkit-background-clip: text;
   background-clip: text;
@@ -66,7 +66,7 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
 
 /* ---------- Sign-in / sign-up ---------- */
 .auth-light {
-  background: radial-gradient(ellipse 70% 55% at 50% -8%, rgba(59,130,246,.20) 0%, rgba(59,130,246,.10) 30%, rgba(59,130,246,.035) 55%, rgba(59,130,246,0) 78%);
+  background: radial-gradient(ellipse 70% 55% at 50% -8%, rgba(0,162,199,.16) 0%, rgba(0,162,199,.08) 30%, rgba(0,162,199,.03) 55%, rgba(0,162,199,0) 78%);
 }
 /* Fine grain on top of the gradient: dithers the colour steps away */
 .auth-noise {
@@ -80,10 +80,10 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
   mask-image: linear-gradient(to top, #000 0%, transparent 100%);
 }
 /* «Вход / Регистрация» switch */
-.auth-tab { color: #5d6577; border-bottom: 2px solid transparent; transition: color .3s, border-color .3s; }
-.auth-tab:hover { color: #9aa0ae; }
+.auth-tab { color: #5f6865; border-bottom: 2px solid transparent; transition: color .3s, border-color .3s; }
+.auth-tab:hover { color: #9ba5a1; }
 #auth[data-mode="login"] .auth-tab[data-switch="login"],
-#auth[data-mode="register"] .auth-tab[data-switch="register"] { color: #dfe2ef; border-bottom-color: #3b82f6; }
+#auth[data-mode="register"] .auth-tab[data-switch="register"] { color: #eceeed; border-bottom-color: #00a2c7; }
 /* Parts that belong to one mode fade out when the other one is active */
 #auth [data-for] { transition: opacity .45s ease, transform .45s ease; }
 #auth[data-mode="login"] [data-for="register"],

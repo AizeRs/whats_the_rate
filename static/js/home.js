@@ -13,7 +13,7 @@
                 const on = t === tab;
                 t.setAttribute('aria-selected', on);
                 t.classList.toggle('text-on-surface', on);
-                t.classList.toggle('shadow-[inset_0_-2px_0_#3b82f6]', on);
+                t.classList.toggle('shadow-[inset_0_-2px_0_#00a2c7]', on);
                 t.classList.toggle('text-outline', !on);
             });
             document.querySelectorAll('.market-panel').forEach(function (p) { p.classList.toggle('is-active', p.dataset.panel === key); });

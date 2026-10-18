@@ -20,7 +20,7 @@ portfolio_bp = Blueprint('portfolio', __name__)
 
 _CATEGORIES = [
     # kind, title, colour, unit, market page, "add" link text
-    ('stocks', 'Акции', '#3b82f6', 'шт.', 'market.stocks', 'Добавить акции →'),
+    ('stocks', 'Акции', '#00a2c7', 'шт.', 'market.stocks', 'Добавить акции →'),
     ('crypto', 'Криптовалюты', '#f0a742', None, 'market.crypto', 'Добавить криптовалюту →'),
     ('fiat', 'Фиатные валюты', '#c0c1ff', None, 'market.fiat', 'Добавить валюту →'),
 ]

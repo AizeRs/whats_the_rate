@@ -5,7 +5,7 @@
 
 {% block content %}
 
-{% set card = 'rounded-2xl bg-[#141823] border border-white/[.07]' %}
+{% set card = 'rounded-2xl bg-surface-container border border-white/[.07]' %}
 
 <!-- ============ Ticker tape (full width, right under the header) ============ -->
 {% if markets.tape %}
@@ -42,7 +42,7 @@
                 <div role="tablist" class="flex gap-5 lg:gap-7">
                     {% for tab in markets.tabs %}
                     <button type="button" role="tab" data-tab="{{ tab.key }}" aria-selected="{{ 'true' if loop.first else 'false' }}"
-                            class="home-tab h-11 text-sm font-semibold transition-colors {{ 'text-on-surface shadow-[inset_0_-2px_0_#3b82f6]' if loop.first else 'text-outline hover:text-on-surface-variant' }}">{{ tab.label }}</button>
+                            class="home-tab h-11 text-sm font-semibold transition-colors {{ 'text-on-surface shadow-[inset_0_-2px_0_#00a2c7]' if loop.first else 'text-outline hover:text-on-surface-variant' }}">{{ tab.label }}</button>
                     {% endfor %}
                 </div>
                 {% for tab in markets.tabs %}

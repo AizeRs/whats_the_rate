@@ -9,7 +9,7 @@
 {% set show_portfolio = has_portfolio %}
 {% set grid_cols = 'sm:grid-cols-[40px_minmax(0,1fr)_170px_340px]' if show_portfolio else 'sm:grid-cols-[40px_minmax(0,1fr)_200px]' %}
 {% set chip_base = 'alpha-chip min-w-[36px] h-9 px-2 rounded-lg font-label-ticker text-[13px] font-medium flex items-center justify-center shrink-0 transition-colors border' %}
-{% set chip_on = 'bg-blue-600 border-blue-600 text-white' %}
+{% set chip_on = 'bg-accent-600 border-accent-600 text-on-accent' %}
 {% set chip_off = 'bg-transparent border-outline-variant/50 text-on-surface-variant hover:text-on-surface hover:border-outline' %}
 
 <div class="flex flex-col w-full py-5 sm:py-space-xl" data-market="crypto" data-currency-sign="{{ currency_sign }}"{% if auto_refresh %} data-auto-reload{% endif %}>
@@ -79,7 +79,7 @@
                         autocomplete="off"
                         placeholder="Название или тикер — например, BTC, Bitcoin, Solana"
                         data-short-placeholder="BTC, Bitcoin, Solana…"
-                        class="w-full h-12 pl-11 pr-[5.5rem] sm:pr-11 rounded-[10px] sm:rounded-lg bg-surface-container-lowest text-on-surface placeholder-outline font-body-md text-body-md border border-outline-variant/50 focus:outline-none focus:border-blue-500 focus:ring-[3px] focus:ring-blue-500/20 transition-all [&::-webkit-search-cancel-button]:hidden"
+                        class="w-full h-12 pl-11 pr-[5.5rem] sm:pr-11 rounded-[10px] sm:rounded-lg bg-surface-container-lowest text-on-surface placeholder-outline font-body-md text-body-md border border-outline-variant/50 focus:outline-none focus:border-accent-500 focus:ring-[3px] focus:ring-accent-500/20 transition-all [&::-webkit-search-cancel-button]:hidden"
                     >
                     <button
                         type="button"
@@ -91,13 +91,13 @@
                     </button>
                     <!-- Phones: submit arrow inside the field instead of the big button -->
                     <button type="submit" aria-label="Найти"
-                            class="sm:hidden absolute right-[5px] top-1/2 -translate-y-1/2 w-[38px] h-[38px] rounded-lg bg-blue-600 text-white flex items-center justify-center">
+                            class="sm:hidden absolute right-[5px] top-1/2 -translate-y-1/2 w-[38px] h-[38px] rounded-lg bg-accent-600 text-on-accent flex items-center justify-center">
                         <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
                     </button>
                 </div>
                 <button
                     type="submit"
-                    class="hidden sm:flex h-12 px-6 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-[15px] transition-colors items-center justify-center cursor-pointer"
+                    class="hidden sm:flex h-12 px-6 rounded-lg bg-accent-600 hover:bg-accent-500 text-on-accent font-semibold text-[15px] transition-colors items-center justify-center cursor-pointer"
                 >
                     Найти
                 </button>
@@ -159,9 +159,9 @@
             </div>
 
             {% if not current_user.is_authenticated %}
-            <div class="mx-5 mb-4 pl-4 pr-3 py-3 flex items-center justify-between gap-3 flex-wrap rounded-lg bg-blue-500/10 border border-blue-400/25">
+            <div class="mx-5 mb-4 pl-4 pr-3 py-3 flex items-center justify-between gap-3 flex-wrap rounded-lg bg-accent-500/10 border border-accent-400/25">
                 <span class="text-sm text-on-surface-variant">Войдите, чтобы добавлять активы в портфель и следить за их стоимостью</span>
-                <a href="{{ url_for('auth.login') }}" class="h-9 px-3.5 inline-flex items-center rounded-lg border border-blue-400/50 text-primary text-sm font-semibold hover:bg-blue-500/10 transition-colors">Войти</a>
+                <a href="{{ url_for('auth.login') }}" class="h-9 px-3.5 inline-flex items-center rounded-lg border border-accent-400/50 text-primary text-sm font-semibold hover:bg-accent-500/10 transition-colors">Войти</a>
             </div>
             {% endif %}
 
@@ -193,7 +193,7 @@
                             <span class="coin-id font-label-ticker text-xs text-outline truncate{% if show_portfolio and pair['held'] %} max-sm:hidden{% endif %}">{{ pair['name'] }}</span>
                             {% if show_portfolio %}
                             <!-- Phones: the held amount is shown under the name instead of the green badge -->
-                            <span class="held-sub {% if not pair['held'] %}hidden {% endif %}sm:!hidden font-label-ticker text-xs text-emerald-400 truncate"><span class="held-qty-sub">{{ pair['held_str'] }}</span> {{ pair['symbol'] }} в портфеле</span>
+                            <span class="held-sub {% if not pair['held'] %}hidden {% endif %}sm:!hidden font-label-ticker text-xs text-positive-400 truncate"><span class="held-qty-sub">{{ pair['held_str'] }}</span> {{ pair['symbol'] }} в портфеле</span>
                             {% endif %}
                         </div>
                     </div>

@@ -27,7 +27,7 @@
 <span class="hidden lg:flex items-center justify-center gap-2">
     {% if r.spark %}
     <svg width="84" height="26" viewBox="0 0 96 28" preserveAspectRatio="none" aria-hidden="true">
-        <polyline points="{{ r.spark }}" fill="none" stroke="{{ '#f2a29a' if r.week_dir == 'down' else '#4edea3' }}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+        <polyline points="{{ r.spark }}" fill="none" stroke="{{ '#ff9592' if r.week_dir == 'down' else '#3dd68c' }}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
     </svg>
     {% endif %}
     <span class="w-[66px] font-label-ticker text-xs text-right whitespace-nowrap {{ {'up': 'text-tertiary', 'down': 'text-error'}.get(r.week_dir, 'text-outline') }}">{{ r.week }}</span>
