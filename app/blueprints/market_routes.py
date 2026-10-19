@@ -1,24 +1,22 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 from flask import Blueprint, render_template, redirect, request, url_for, jsonify, get_template_attribute
 from flask_login import current_user
 from app.models import db_session
 from app.models.portfolios import Portfolio
 from app.services.symbols import MAIN_SYMBOLS
 from app.services.data_service import (
-    update_tickers_db, update_crypto_db, update_currencies_db,
     get_stocks_by_letter, get_stocks_by_tickers, get_crypto_by_letter, get_crypto_updated_at, get_all_fiats,
     save_ticker_price
 )
 from app.services.api_client import fetch_quote
 from app.formatting import fmt_number_ru, fmt_money_ru, fmt_change, price_age, ticker_hue, user_currency, MONTHS_GENITIVE, to_user_tz, crypto_logo
-from app.presenters import (
-    stock_row, fiat_rows, MAX_STOCKS_IN_PORTFOLIO, CRYPTO_AUTO_REFRESH_AFTER, FIAT_AUTO_REFRESH_AFTER
-)
+from app.presenters import stock_row, fiat_rows, MAX_STOCKS_IN_PORTFOLIO
+from app import auto_reload
 
 market_bp = Blueprint('market', __name__)
 
 def handle_add_asset(request_form_key, asset_type, param):
-    """Helper function to process adding an asset to the user's portfolio."""
+    """Helper function to process adding an asset to the user's portfolio"""
     raw_val = request.form.get(request_form_key)
     qty = 1.0
     if not raw_val and request.is_json:
@@ -58,7 +56,9 @@ def handle_add_asset(request_form_key, asset_type, param):
                     param['success'] = f'{ticker}_a'
                 else:
                     param['danger'] = f'{ticker}_a'
-# --- Stocks -----------------------------------------------------------------
+
+
+# --- Stocks ---
 
 STOCKS_PER_PAGE = 50
 
@@ -75,12 +75,9 @@ def _stocks_ajax_response():
     data = request.get_json(silent=True) or request.form
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json
 
-    # Reload the list of tickers (prices are not affected)
+    # The page asks to reload the ticker list
     if data.get('reload_tickers'):
-        success = update_tickers_db()
-        if is_ajax:
-            return jsonify({'success': bool(success)})
-        return redirect(request.path + ('?reload=1' if success else '?reload=2'))
+        return jsonify({'success': auto_reload.reload('tickers')})
 
     # Refresh the price of one stock
     ticker = data.get('reload_rate')
@@ -97,7 +94,7 @@ def _stocks_ajax_response():
         return jsonify({'success': status == 'ok', 'status': status, 'price_num': row['price_num'],
                         'price_html': price_html, 'value_html': value_html})
 
-    # Add to the portfolio or set an exact quantity
+    # Add to the portfolio or c quantity
     if data.get('add_stock') or data.get('set_stock'):
         return _portfolio_quantity_response('stocks', data.get('add_stock'), data.get('set_stock'), data)
     return None
@@ -127,13 +124,12 @@ def _portfolio_quantity_response(kind, add_ticker, set_ticker, data):
 def _stocks_common_params():
     code, sign, _ = user_currency()
     holdings = _portfolio_assets('stocks')
-    reload_arg = request.args.get('reload')
     return holdings, {
         'currency_code': code,
         'currency_sign': sign,
         'has_portfolio': current_user.is_authenticated and current_user.portfolio_id is not None,
         'stocks_full': len(holdings) >= MAX_STOCKS_IN_PORTFOLIO,
-        'reload': int(reload_arg) if reload_arg in ('1', '2') else None,
+        'auto_reload': auto_reload.is_due('tickers'),
     }
 
 
@@ -177,11 +173,7 @@ def available_stocks_for_letter(letter):
     return render_template('available_stocks_for_letter.html', **param)
 
 
-# --- Helpers for the crypto page -------------------------------------------
-
-# Don't retry the automatic reload more often than this (CoinGecko's keyless API allows ~10-30 calls/min)
-_CRYPTO_AUTO_RETRY_AFTER = timedelta(minutes=1)
-_crypto_last_auto_attempt = None
+# --- Helpers for the crypto page ---
 
 
 def _crypto_updated_label(updated_at):
@@ -194,7 +186,7 @@ def _crypto_updated_label(updated_at):
 
 
 def _portfolio_assets(kind):
-    """Returns one part of the current user's portfolio ('stocks', 'crypto', 'fiat') as {SYMBOL: quantity}."""
+    """Returns one part of the current user's portfolio ('stocks', 'crypto', 'fiat') as {SYMBOL: quantity}"""
     if not (current_user.is_authenticated and current_user.portfolio_id is not None):
         return {}
     with db_session.create_session() as db_sess:
@@ -205,9 +197,9 @@ def _portfolio_assets(kind):
 
 
 def _set_asset_quantity(kind, ticker, qty):
-    """Sets an exact quantity of an asset in the user's portfolio (0 removes it).
+    """Sets an exact quantity of an asset in the user's portfolio (0 removes it)
 
-    Returns 'ok', 'limit' (too many stocks) or 'error'.
+    Returns 'ok', 'limit' (too many stocks) or 'error'
     """
     if float(qty).is_integer():
         qty = int(qty)
@@ -231,14 +223,13 @@ def _set_crypto_quantity(ticker, qty):
 
 @market_bp.route('/crypto', methods=['GET', 'POST'])
 def crypto():
-    """Renders the main crypto market page showing top-50 by market cap (#)."""
+    """Renders the main crypto market page showing top-50 by market cap"""
     return available_crypto_for_letter(letter='#')
 
 
 @market_bp.route('/crypto/<string:letter>', methods=['GET', 'POST'])
 def available_crypto_for_letter(letter='#'):
-    """Renders cryptocurrencies filtered by their starting letter, query, or top-50 (#)."""
-    global _crypto_last_auto_attempt
+    """Renders cryptocurrencies filtered by their starting letter, query, or top-50"""
     raw_query = letter.strip()
     is_top = raw_query in ('#', '%23', 'top', 'TOP')
     is_search = not is_top and len(raw_query) > 1
@@ -262,18 +253,11 @@ def available_crypto_for_letter(letter='#'):
     if request.method == 'POST':
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json
         
-        # Handle crypto database reload action
+        # The page (or the home page) asks to reload old quotes
         if request.form.get('reload_crypto') or (request.is_json and request.json.get('reload_crypto')):
-            # Counted here, not when a page offers the reload: the page may reload itself before sending it
-            _crypto_last_auto_attempt = datetime.now()
-            success = update_crypto_db()
-            if is_ajax:
-                return jsonify({'success': bool(success)})
-            if clean_letter == '#':
-                return redirect(url_for('market.crypto', reload='1' if success else '2'))
-            return redirect(url_for('market.available_crypto_for_letter', letter=letter, reload='1' if success else '2'))
+            return jsonify({'success': auto_reload.reload('crypto')})
 
-        # Handle adding asset to user portfolio
+        # User added an asset to the portfolio
         if request.form.get('add_crypto') or (request.is_json and request.json.get('add_crypto')):
             handle_add_asset('add_crypto', 'crypto', param)
             if is_ajax:
@@ -287,7 +271,7 @@ def available_crypto_for_letter(letter='#'):
                 return redirect(url_for('market.crypto', status=status_code))
             return redirect(url_for('market.available_crypto_for_letter', letter=letter, status=status_code))
 
-        # Handle setting an exact quantity (editing an asset that is already in the portfolio)
+        # User edited the quantity of an asset that's already in the portfolio
         set_symbol = request.json.get('set_crypto') if request.is_json else request.form.get('set_crypto')
         if set_symbol:
             raw_qty = request.json.get('quantity') if request.is_json else request.form.get('quantity')
@@ -301,13 +285,7 @@ def available_crypto_for_letter(letter='#'):
             return jsonify({'success': bool(ok), 'symbol': str(set_symbol),
                             'quantity': quantity, 'quantity_str': fmt_number_ru(quantity)})
 
-    # Read flash status from query parameters (PRG pattern)
-    reload_arg = request.args.get('reload')
-    if reload_arg == '1':
-        param['reload'] = 1
-    elif reload_arg == '2':
-        param['reload'] = 2
-
+    
     status_arg = request.args.get('status')
     if status_arg:
         if '_a' in status_arg:
@@ -322,7 +300,7 @@ def available_crypto_for_letter(letter='#'):
         except (ValueError, TypeError, ZeroDivisionError):
             price_num = None
         held = holdings.get(crypto['symbol'], 0) or 0
-        # 24 h change from CoinGecko, shown only while the quotes are fresh
+        # 24 h change from CoinGecko, shown only while the data is fresh
         change = crypto['change_pct'] if price_age(crypto['updated_at'])['fresh'] else None
         logo, logo_set = crypto_logo(crypto['image'])
         param['crypto'].append({
@@ -346,48 +324,28 @@ def available_crypto_for_letter(letter='#'):
     param['has_portfolio'] = current_user.is_authenticated and current_user.portfolio_id is not None
     updated_at = get_crypto_updated_at()
     param['updated_at'] = _crypto_updated_label(updated_at)
-    now = datetime.now()
-    is_stale = not updated_at or now - updated_at > CRYPTO_AUTO_REFRESH_AFTER
-    recently_tried = _crypto_last_auto_attempt and now - _crypto_last_auto_attempt < _CRYPTO_AUTO_RETRY_AFTER
-    param['auto_refresh'] = bool(is_stale and not recently_tried)
+    param['auto_reload'] = auto_reload.is_due('crypto')
 
     return render_template('available_crypto_for_letter.html', **param)
 
 
-# --- Fiat currencies ---------------------------------------------------------
-
-_FIAT_AUTO_RETRY_AFTER = timedelta(minutes=1)
-_fiat_last_auto_attempt = None
+# --- Fiat currencies ---
 
 
 @market_bp.route('/fiat', methods=['GET', 'POST'])
 def fiat():
-    """All fiat currencies on one page (the ECB publishes about 30)."""
-    global _fiat_last_auto_attempt
-
+    """All fiat currencies on one page"""
     if request.method == 'POST':
         data = request.get_json(silent=True) or request.form
-        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json
+        # The page (or the home page) asks to reload old quotes
         if data.get('reload_fiat'):
-            # Counted here, not when a page offers the reload: the page may reload itself before sending it
-            _fiat_last_auto_attempt = datetime.now()
-            success = update_currencies_db(MAIN_SYMBOLS)
-            if is_ajax:
-                return jsonify({'success': bool(success)})
-            return redirect(url_for('market.fiat', reload='1' if success else '2'))
+            return jsonify({'success': auto_reload.reload('fiat')})
         if data.get('add_fiat') or data.get('set_fiat'):
             return _portfolio_quantity_response('fiat', data.get('add_fiat'), data.get('set_fiat'), data)
 
     code, sign, _ = user_currency()
     fiats = get_all_fiats()
-    reload_arg = request.args.get('reload')
     rate_date = max((f['rate_date'] for f in fiats if f['rate_date']), default=None)
-    updated_at = max((f['updated_at'] for f in fiats if f['updated_at']), default=None)
-
-    now = datetime.now()
-    is_stale = not updated_at or now - updated_at > FIAT_AUTO_REFRESH_AFTER
-    recently_tried = _fiat_last_auto_attempt and now - _fiat_last_auto_attempt < _FIAT_AUTO_RETRY_AFTER
-    auto_refresh = bool(is_stale and not recently_tried)
 
     param = {
         'fiats': fiat_rows(fiats, _portfolio_assets('fiat')),
@@ -395,8 +353,7 @@ def fiat():
         'currency_sign': sign,
         'has_portfolio': current_user.is_authenticated and current_user.portfolio_id is not None,
         'rate_date': f'{rate_date.day} {MONTHS_GENITIVE[rate_date.month - 1]} {rate_date.year}' if rate_date else None,
-        'reload': int(reload_arg) if reload_arg in ('1', '2') else None,
-        'auto_refresh': auto_refresh,
+        'auto_reload': auto_reload.is_due('fiat'),
     }
     return render_template('available_fiat.html', **param)
 

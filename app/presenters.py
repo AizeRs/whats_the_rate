@@ -10,8 +10,9 @@ MAX_STOCKS_IN_PORTFOLIO = 5  # Enforced by Portfolio.set_in_dict
 
 # Prices older than this are reloaded automatically when a page with them is opened
 STOCK_AUTO_REFRESH_AFTER = timedelta(minutes=15)  # Finnhub: one request per ticker
-CRYPTO_AUTO_REFRESH_AFTER = timedelta(minutes=5)  # CoinGecko: one request for all coins
+CRYPTO_AUTO_REFRESH_AFTER = timedelta(minutes=1)  # CoinGecko: one request for all coins
 FIAT_AUTO_REFRESH_AFTER = timedelta(hours=1)  # ECB publishes rates once per working day
+TICKERS_AUTO_REFRESH_AFTER = timedelta(days=1)  # Finnhub's list of US tickers: ~7 MB, changes slowly
 
 # The currencies users can display prices in go first on /fiat
 FIAT_FIRST = ['USD', 'EUR', 'GBP', 'JPY', 'CHF']

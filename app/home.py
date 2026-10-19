@@ -1,4 +1,4 @@
-"""Data for the home page: a quotes table for three markets, the biggest movers and the ticker tape."""
+"""Data for the home page: a quotes table for three markets, the biggest movers and the ticker tape"""
 from datetime import datetime, timedelta
 from flask import url_for
 from app.services.data_service import (
@@ -8,24 +8,30 @@ from app.formatting import (
     price_age, fmt_change, fmt_money_ru, fmt_big_money, ticker_hue, user_currency, to_user_tz, MONTHS_GENITIVE,
     crypto_logo
 )
-from app.presenters import stock_row, fiat_rows, CRYPTO_AUTO_REFRESH_AFTER, FIAT_AUTO_REFRESH_AFTER
+from app.presenters import stock_row, fiat_rows
 
-CRYPTO_ROWS = 8
+CRYPTO_ROWS = 10
 # Currencies in the table, in this order (the viewer's own currency is skipped)
 FIATS = ['USD', 'EUR', 'GBP', 'CHF', 'JPY', 'CNY', 'CAD']
 FIAT_ROWS = 6
-# Stocks in the table; their prices are reloaded in the background when they're older than the usual limit
+# Stocks in the table. their prices are reloaded in the background when they're older than the usual limit
 STOCKS = {  # ticker: (name, type, exchange) — used only if the ticker list hasn't been loaded yet
     'AAPL': ('APPLE INC', 'Common Stock', 'XNAS'),
     'NVDA': ('NVIDIA CORP', 'Common Stock', 'XNAS'),
     'MSFT': ('MICROSOFT CORP', 'Common Stock', 'XNAS'),
     'TSLA': ('TESLA INC', 'Common Stock', 'XNAS'),
     'AMZN': ('AMAZON.COM INC', 'Common Stock', 'XNAS'),
+    'GOOG': ('Alphabet Inc — Class C', 'Common Stock', 'XNAS'),
+    'SPCX': ('Space Exploration Techn — Class A', 'Common Stock', 'XNAS'),
+    'AMD': ('Advanced Micro Devices', 'Common Stock', 'XNAS'),
+    'INTC': ('Intel Corp', 'Common Stock', 'XNAS'),
+    'KO': ('Coca-Cola Co/the', 'Common Stock', 'NYSE'),
+    
 }
-# Market caps change slowly: reload one at most once a day (per worker; after a restart it's loaded again)
+# Market caps change slowly: reload one at most once a day
 MARKET_CAP_MAX_AGE = timedelta(days=1)
 _cap_loaded_at = {}
-# Don't retry the automatic reload of one ticker more often than this (Finnhub: ~60 requests/min for the whole site)
+# Don't retry the automatic reload of one ticker more often than this
 STOCK_RETRY_AFTER = timedelta(minutes=1)
 _stock_attempts = {}
 STABLECOINS = {'USDT', 'USDC', 'DAI', 'FDUSD', 'USDE', 'TUSD', 'PYUSD', 'USDS'}
@@ -34,7 +40,7 @@ SPARK_W, SPARK_H = 96, 28
 
 
 def _change(pct):
-    """(label, direction) for a change in %."""
+    """(label, direction) for a change in %"""
     if pct is None:
         return '', 'flat'
     if abs(pct) < 0.005:
@@ -43,7 +49,7 @@ def _change(pct):
 
 
 def _spark_points(values):
-    """SVG polyline points for a small sparkline, or '' when there's nothing to draw."""
+    """SVG polyline points for a small sparkline, or '' when there's nothing to draw"""
     values = [v for v in values if v is not None]
     if len(values) < 2:
         return ''
@@ -80,7 +86,7 @@ def _crypto_rows():
 
 
 def stock_home_row(stock):
-    """One stock row; also used by the AJAX price refresh."""
+    """One stock row"""
     _, sign, rate = user_currency()
     r = stock_row(stock, {})
     fresh = r['age']['fresh']
@@ -131,7 +137,7 @@ def stock_attempted(ticker):
 
 
 def _per_usd(rates, code):
-    """Units of a currency per 1 USD in one ECB fixing (USD itself isn't listed: it's the base)."""
+    """Units of a currency per 1 USD"""
     return 1.0 if code == 'USD' else rates.get(code)
 
 
@@ -164,7 +170,7 @@ def _fiat_rows(fiats):
 
 
 def _movers(rows, count=3):
-    """Biggest risers and fallers among the rows on the page."""
+    """Biggest risers and fallers among the rows on the page"""
     moving = [r for r in rows if r['change_pct'] is not None and abs(r['change_pct']) >= 0.005]
     up = sorted((r for r in moving if r['change_pct'] > 0), key=lambda r: -r['change_pct'])[:count]
     down = sorted((r for r in moving if r['change_pct'] < 0), key=lambda r: r['change_pct'])[:count]
@@ -172,7 +178,7 @@ def _movers(rows, count=3):
 
 
 def _tape(crypto, stocks, fiat):
-    """Ticker tape: a few big coins (no stablecoins), all the stocks and the main currencies."""
+    """Ticker tape: a few big coins (no stablecoins), all the stocks and the main currencies"""
     coins = [r for r in crypto if r['code'] not in STABLECOINS][:4]
     return [r for r in coins + stocks + fiat[:3] if r['price_str'] and r['price_str'] != '—']
 
@@ -193,8 +199,6 @@ def home_markets():
     crypto_updated = get_crypto_updated_at()
     stock_times = [s['updated_at'] for s in get_stocks_by_tickers(STOCKS) if s['updated_at']]
     rate_date = max((f['rate_date'] for f in fiats if f['rate_date']), default=None)
-    fiat_updated = max((f['updated_at'] for f in fiats if f['updated_at']), default=None)
-    now = datetime.now()
 
     tabs = [
         {'key': 'crypto', 'label': 'Криптовалюты', 'change_head': '24 часа', 'week': True, 'cap': True,
@@ -211,14 +215,11 @@ def home_markets():
         'tabs': tabs,
         'movers': _movers(crypto + stocks + fiat),
         'tape': _tape(crypto, stocks, fiat),
-        # Same thresholds as on the market pages: the page asks the server to reload old quotes
-        'crypto_stale': not crypto_updated or now - crypto_updated > CRYPTO_AUTO_REFRESH_AFTER,
-        'fiat_stale': not fiat_updated or now - fiat_updated > FIAT_AUTO_REFRESH_AFTER,
     }
 
 
 def greeting():
-    """Greeting by the time of day in the visitor's timezone (the browser sends it in the 'tz' cookie)."""
+    """Greeting by the time of day in the visitor's timezone (the browser sends it in the 'tz' cookie)"""
     hour = to_user_tz(datetime.now()).hour
     if 5 <= hour < 12:
         return 'Доброе утро'

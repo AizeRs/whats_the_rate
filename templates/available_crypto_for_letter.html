@@ -12,10 +12,10 @@
 {% set chip_on = 'bg-accent-600 border-accent-600 text-on-accent' %}
 {% set chip_off = 'bg-transparent border-outline-variant/50 text-on-surface-variant hover:text-on-surface hover:border-outline' %}
 
-<div class="flex flex-col w-full py-5 sm:py-space-xl" data-market="crypto" data-currency-sign="{{ currency_sign }}"{% if auto_refresh %} data-auto-reload{% endif %}>
+<div class="flex flex-col w-full py-5 sm:py-space-xl" data-market="crypto" data-currency-sign="{{ currency_sign }}"{% if auto_reload %} data-auto-reload="reload_crypto"{% endif %}>
     <div class="max-w-[1080px] w-full mx-auto flex flex-col gap-3.5 sm:gap-5">
 
-        <!-- Title bar (on phones: title + time on the left, icon-only refresh on the right) -->
+        <!-- Title bar (phones: the update time under the title) -->
         <div class="flex items-center sm:items-end justify-between gap-3 sm:gap-space-md" id="top">
             <div class="min-w-0">
                 <h1 class="text-2xl sm:text-3xl font-bold text-on-surface tracking-tight">Криптовалюты</h1>
@@ -31,34 +31,8 @@
                 {% if updated_at %}
                 <span class="hidden sm:inline text-[13px] text-outline">Обновлено <span class="font-label-ticker text-on-surface-variant">{{ updated_at }}</span></span>
                 {% endif %}
-                <form action="" method="post" data-reload="reload_crypto">
-                    <button
-                        type="submit"
-                        name="reload_crypto"
-                        value="1"
-                        class="inline-flex items-center justify-center gap-2 h-11 w-11 sm:h-10 sm:w-auto sm:px-3.5 rounded-[10px] sm:rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface text-sm font-medium border border-outline-variant/50 hover:border-outline transition-colors cursor-pointer whitespace-nowrap"
-                        title="Синхронизировать котировки с сервером"
-                        aria-label="Обновить курсы"
-                    >
-                        <span class="material-symbols-outlined text-[18px] transition-transform duration-500" data-reload-icon>sync</span>
-                        <span data-reload-text class="hidden sm:inline">Обновить курсы</span>
-                    </button>
-                </form>
             </div>
         </div>
-
-        <!-- Reload feedback -->
-        {% if reload == 1 %}
-        <div class="px-4 py-3 rounded-lg bg-tertiary-container/15 text-tertiary text-sm flex items-center gap-2 border border-tertiary/30">
-            <span class="material-symbols-outlined text-[18px]">check_circle</span>
-            <span>Список криптовалют и котировки успешно обновлены.</span>
-        </div>
-        {% elif reload == 2 %}
-        <div class="px-4 py-3 rounded-lg bg-error-container/20 text-error text-sm flex items-center gap-2 border border-error/30">
-            <span class="material-symbols-outlined text-[18px]">error</span>
-            <span>Ошибка при обращении к API CoinGecko (лимит запросов). Попробуйте через минуту.</span>
-        </div>
-        {% endif %}
 
         <!-- Search + first-symbol filter (one compact panel) -->
         <section aria-label="Поиск и фильтр" class="sm:bg-surface-container sm:rounded-xl sm:p-4 sm:border sm:border-outline-variant/30 flex flex-col gap-3.5">
@@ -221,6 +195,8 @@
                 <p class="text-outline text-sm">
                     {% if is_search %}
                     По запросу «{{ search_query }}» цифровых активов не обнаружено
+                    {% elif auto_reload %}
+                    Загружаем котировки, страница обновится сама
                     {% else %}
                     На «{{ letter }}» цифровых активов не обнаружено
                     {% endif %}

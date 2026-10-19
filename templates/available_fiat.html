@@ -7,36 +7,14 @@
 {% set show_portfolio = has_portfolio %}
 {% set grid_cols = 'sm:grid-cols-[minmax(0,1fr)_250px_350px]' if show_portfolio else 'sm:grid-cols-[minmax(0,1fr)_260px]' %}
 
-<div class="flex flex-col w-full py-space-xl" data-market="fiat" data-currency-sign="{{ currency_sign }}"{% if auto_refresh %} data-auto-reload{% endif %}>
+<div class="flex flex-col w-full py-space-xl" data-market="fiat" data-currency-sign="{{ currency_sign }}"{% if auto_reload %} data-auto-reload="reload_fiat"{% endif %}>
     <div class="max-w-[1080px] w-full mx-auto flex flex-col gap-5">
 
         <!-- Title bar -->
-        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-space-md">
-            <div>
-                <h1 class="text-2xl sm:text-3xl font-bold text-on-surface tracking-tight">Фиатные валюты</h1>
-                <p class="font-body-md text-body-md text-on-surface-variant mt-1">Официальные курсы Европейского центрального банка</p>
-            </div>
-            <form action="" method="post" data-reload="reload_fiat" class="flex flex-col items-start sm:items-end gap-1.5 shrink-0">
-                <button type="submit" name="reload_fiat" value="1"
-                        class="inline-flex items-center gap-2 h-10 px-3.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface text-sm font-medium border border-outline-variant/50 hover:border-outline transition-colors cursor-pointer whitespace-nowrap disabled:cursor-wait disabled:opacity-80">
-                    <span class="material-symbols-outlined text-[18px]" data-reload-icon>sync</span>
-                    <span data-reload-text>Обновить курсы</span>
-                </button>
-                <span class="text-xs text-outline">ЕЦБ публикует курсы раз в рабочий день, около 17:00 мск</span>
-            </form>
+        <div>
+            <h1 class="text-2xl sm:text-3xl font-bold text-on-surface tracking-tight">Фиатные валюты</h1>
+            <p class="font-body-md text-body-md text-on-surface-variant mt-1">Официальные курсы Европейского центрального банка, публикуются раз в рабочий день около 17:00 мск</p>
         </div>
-
-        {% if reload == 1 %}
-        <div class="px-4 py-3 rounded-lg bg-tertiary-container/15 text-tertiary text-sm flex items-center gap-2 border border-tertiary/30">
-            <span class="material-symbols-outlined text-[18px]">check_circle</span>
-            <span>Курсы валют обновлены.</span>
-        </div>
-        {% elif reload == 2 %}
-        <div class="px-4 py-3 rounded-lg bg-error-container/20 text-error text-sm flex items-center gap-2 border border-error/30">
-            <span class="material-symbols-outlined text-[18px]">error</span>
-            <span>Не удалось получить курсы от Frankfurter. Попробуйте позже.</span>
-        </div>
-        {% endif %}
 
         <!-- Search (filters the list right away) -->
         <section aria-label="Поиск" class="bg-surface-container rounded-xl p-4 border border-outline-variant/30">
@@ -125,7 +103,7 @@
                 <span class="material-symbols-outlined text-outline text-[40px]">search_off</span>
                 <h3 class="text-on-surface font-semibold text-base">Ничего не найдено</h3>
                 <p class="text-outline text-sm">
-                    {% if fiats %}ЕЦБ публикует курсы около 30 валют. Проверьте код или название{% else %}Курсов пока нет — нажмите «Обновить курсы»{% endif %}
+                    {% if fiats %}ЕЦБ публикует курсы около 30 валют. Проверьте код или название{% else %}{% if auto_reload %}Загружаем курсы ЕЦБ, страница обновится сама{% else %}Курсов пока нет. Загляните чуть позже{% endif %}{% endif %}
                 </p>
             </div>
         </section>

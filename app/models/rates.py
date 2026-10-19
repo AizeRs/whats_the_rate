@@ -2,7 +2,7 @@ import sqlalchemy
 from .db_session import SqlAlchemyBase
 
 class StockRate(SqlAlchemyBase):
-    """Stores the current rate for a stock."""
+    """Stores the current rate for a stock"""
     __tablename__ = 'stock_rates'
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
@@ -16,7 +16,7 @@ class StockRate(SqlAlchemyBase):
     price_updated_at = sqlalchemy.Column(sqlalchemy.DateTime, nullable=True)  # When WE saved the price
 
 class CryptoRate(SqlAlchemyBase):
-    """Stores the current rate for a cryptocurrency."""
+    """Stores the current rate for a cryptocurrency"""
     __tablename__ = 'crypto_rates'
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
@@ -32,7 +32,7 @@ class CryptoRate(SqlAlchemyBase):
     price_updated_at = sqlalchemy.Column(sqlalchemy.DateTime, nullable=True)  # When the quotes were last loaded
 
 class FiatRate(SqlAlchemyBase):
-    """Stores the current rate for a fiat currency."""
+    """Stores the current rate for a fiat currency"""
     __tablename__ = 'fiat_rates'
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
@@ -42,3 +42,22 @@ class FiatRate(SqlAlchemyBase):
     change_pct = sqlalchemy.Column(sqlalchemy.Float, nullable=True)  # Change vs the previous ECB fixing, % (in USD)
     rate_date = sqlalchemy.Column(sqlalchemy.Date, nullable=True)  # Date of the ECB fixing
     updated_at = sqlalchemy.Column(sqlalchemy.DateTime, nullable=True)  # When we loaded the rates
+
+
+class FiatHistory(SqlAlchemyBase):
+    """ECB fixings of the last days: the 7-day change and sparkline of currencies on the home page"""
+    __tablename__ = 'fiat_history'
+    __table_args__ = (sqlalchemy.UniqueConstraint('rate_date', 'symbol'),)
+
+    id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
+    rate_date = sqlalchemy.Column(sqlalchemy.Date, nullable=False, index=True)  # Date of the ECB fixing
+    symbol = sqlalchemy.Column(sqlalchemy.String, nullable=False)
+    per_usd = sqlalchemy.Column(sqlalchemy.Float, nullable=False)  # Units of the currency per 1 USD
+
+
+class DataUpdate(SqlAlchemyBase):
+    """When a whole data set was last loaded, for sets without a timestamp of their own (e.g. the ticker list)"""
+    __tablename__ = 'data_updates'
+
+    source = sqlalchemy.Column(sqlalchemy.String, primary_key=True)  # 'tickers'
+    updated_at = sqlalchemy.Column(sqlalchemy.DateTime, nullable=False)

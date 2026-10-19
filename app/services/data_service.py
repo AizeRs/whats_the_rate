@@ -1,8 +1,8 @@
 import os
-from datetime import datetime
+from datetime import datetime, date
 from sqlalchemy import or_, func, case
 from app.models.db_session import create_session
-from app.models.rates import StockRate, CryptoRate, FiatRate
+from app.models.rates import StockRate, CryptoRate, FiatRate, FiatHistory, DataUpdate
 import json
 from datetime import timedelta
 from .api_client import fetch_crypto_data, fetch_fiat_data, fetch_tickers_data, fetch_fiat_history
@@ -58,10 +58,45 @@ def update_currencies_db(main_symbols_dict):
                     if currency in main_symbols_dict:
                         main_symbols_dict[currency] = (main_symbols_dict[currency][0], rate)
             session.commit()
-            return True
+        _save_fiat_history()
+        return True
     except Exception as e:
         print(f"Error writing currencies to db: {e}")
         return False
+
+
+FIAT_HISTORY_DAYS = 7  # Shown on the home page
+_FIAT_HISTORY_KEEP = timedelta(days=30)
+
+
+def _save_fiat_history():
+    """Adds the ECB fixings of the last week to fiat_history (once per rates reload, one request) and drops old ones."""
+    history = fetch_fiat_history(FIAT_HISTORY_DAYS)
+    if not history:
+        return
+    try:
+        with create_session() as session:
+            stored = {(d, s) for d, s in session.query(FiatHistory.rate_date, FiatHistory.symbol)
+                      .filter(FiatHistory.rate_date.in_(list(history)))}
+            for rate_date, rates in history.items():
+                for symbol, per_usd in rates.items():
+                    if (rate_date, symbol) not in stored:
+                        session.add(FiatHistory(rate_date=rate_date, symbol=symbol, per_usd=float(per_usd)))
+            session.query(FiatHistory).filter(FiatHistory.rate_date < date.today() - _FIAT_HISTORY_KEEP).delete()
+            session.commit()
+    except Exception as e:
+        print(f"Error writing fiat history to db: {e}")
+
+def get_tickers_updated_at():
+    """When the list of tickers was last loaded (None if never)."""
+    try:
+        with create_session() as session:
+            row = session.get(DataUpdate, 'tickers')
+            return row.updated_at if row else None
+    except Exception as e:
+        print(e)
+        return None
+
 
 def update_tickers_db():
     """Updates the database with the latest stock tickers."""
@@ -84,8 +119,9 @@ def update_tickers_db():
                     existing[ticker_symbol] = stock
                 stock.type = stock_type
                 stock.mic = mic
+            session.merge(DataUpdate(source='tickers', updated_at=datetime.now()))
             session.commit()
-            return True
+        return True
     except Exception as e:
         print(f"Error writing tickers to db: {e}")
         return False
@@ -154,6 +190,16 @@ def get_stocks_by_tickers(tickers):
         print(e)
         return []
 
+def get_fiat_updated_at():
+    """When the fiat rates were last loaded (None if never)."""
+    try:
+        with create_session() as session:
+            return session.query(func.max(FiatRate.updated_at)).scalar()
+    except Exception as e:
+        print(e)
+        return None
+
+
 def get_crypto_updated_at():
     """When the crypto quotes were last loaded (None if never)."""
     try:
@@ -189,21 +235,18 @@ def save_stock_market_cap(ticker, market_cap):
         print(f"Error saving market cap: {e}")
 
 
-# ECB fixings for the home page sparklines: change once a day, so one request per hour per worker is plenty
-_FIAT_HISTORY_TTL = timedelta(hours=1)
-_fiat_history_cache = {'at': None, 'data': {}}
-
-
 def get_fiat_history():
-    """{date: {CODE: units per 1 USD}} for the last ~week, cached."""
-    now = datetime.now()
-    cached_at = _fiat_history_cache['at']
-    if cached_at is None or now - cached_at > _FIAT_HISTORY_TTL or not _fiat_history_cache['data']:
-        data = fetch_fiat_history()
-        if data or cached_at is None:
-            _fiat_history_cache['data'] = data
-        _fiat_history_cache['at'] = now
-    return _fiat_history_cache['data']
+    """{date: {CODE: units per 1 USD}} of the ECB fixings of the last week (filled by update_currencies_db)."""
+    history = {}
+    try:
+        with create_session() as session:
+            rows = session.query(FiatHistory).filter(
+                FiatHistory.rate_date >= date.today() - timedelta(days=FIAT_HISTORY_DAYS))
+            for row in rows:
+                history.setdefault(row.rate_date, {})[row.symbol] = row.per_usd
+    except Exception as e:
+        print(e)
+    return history
 
 
 def ensure_stocks(stocks):

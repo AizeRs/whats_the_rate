@@ -8,10 +8,9 @@ from app.services.symbols import MAIN_SYMBOLS
 from app.services.data_service import get_stocks_by_tickers, save_ticker_price, save_stock_market_cap
 from app.services.api_client import fetch_quote, fetch_stock_market_cap
 from app.blueprints.portfolio_routes import portfolio_summary
-from app.blueprints import market_routes
+from app import auto_reload
 from app.blueprints.auth_routes import DEMO_USERNAME
 from app import home
-from datetime import datetime
 import os
 import secrets
 
@@ -28,7 +27,7 @@ def index():
             return jsonify({'success': False, 'status': 'error'}), 400
         home.stock_attempted(ticker)
         stock = next(iter(get_stocks_by_tickers([ticker])), None)
-        # The price is reloaded only when it's old; the market cap — when it's missing or a day old
+        # The price is reloaded only when it's old. the market cap — when it's missing or a day old
         status = 'ok'
         if stock is None or home.stock_home_row(stock)['stale']:
             status, quote = fetch_quote(ticker)
@@ -46,15 +45,9 @@ def index():
         return jsonify({'success': status == 'ok', 'status': status, 'html': html})
 
     markets = home.home_markets()
-    # Old crypto / fiat quotes are reloaded by the page itself, with the same retry limits as on their own pages
-    # (the attempt is counted when the request reaches the crypto / fiat page, not here)
-    now = datetime.now()
-    auto_crypto = markets['crypto_stale'] and not (
-        market_routes._crypto_last_auto_attempt
-        and now - market_routes._crypto_last_auto_attempt < market_routes._CRYPTO_AUTO_RETRY_AFTER)
-    auto_fiat = markets['fiat_stale'] and not (
-        market_routes._fiat_last_auto_attempt
-        and now - market_routes._fiat_last_auto_attempt < market_routes._FIAT_AUTO_RETRY_AFTER)
+    
+    auto_crypto = auto_reload.is_due('crypto')
+    auto_fiat = auto_reload.is_due('fiat')
 
     summary = None
     if current_user.is_authenticated and current_user.portfolio_id:

@@ -1,5 +1,5 @@
 // Shared code of the market pages (stocks, crypto, fiat). The page root carries the settings:
-//   data-market="stocks|crypto|fiat"   data-currency-sign="$"   data-auto-reload (quotes are old: reload them)
+//   data-market="stocks|crypto|fiat"   data-currency-sign="$"   data-auto-reload="reload_crypto" (data is old)
 (function () {
     const root = document.querySelector('[data-market]');
     if (!root) return;
@@ -8,43 +8,13 @@
     const sign = root.dataset.currencySign;
     const MAX_STOCKS = 5;
 
-    /* ---------- Reload of the quotes / ticker list (the button in the title bar) ---------- */
-    const reloadForm = document.querySelector('[data-reload]');
-
-    // auto = true: the quotes are old, reload them silently right after the page opens
-    async function reload(auto) {
-        const btn = reloadForm.querySelector('button');
-        const icon = reloadForm.querySelector('[data-reload-icon]');
-        const text = reloadForm.querySelector('[data-reload-text]');
-        if (btn.disabled) return;
-        const idleText = text.textContent;
-        const restore = () => {
-            icon.classList.remove('animate-spin');
-            text.textContent = idleText;
-            btn.disabled = false;
-        };
-        btn.disabled = true;
-        icon.classList.add('animate-spin');
-        text.textContent = reloadForm.dataset.busyText || 'Обновление…';
-        try {
-            const data = await post({ [reloadForm.dataset.reload]: 1 });
-            if (auto) {
-                if (data.success) window.location.href = window.location.pathname;
-                else restore();
-                return;
-            }
-            // The server shows the result above the list
-            window.location.href = window.location.pathname + (data.success ? '?reload=1' : '?reload=2');
-        } catch (err) {
-            console.error('Error reloading quotes:', err);
-            restore();
-            if (!auto) reloadForm.submit();  // Plain form POST as a fallback
-        }
-    }
-
-    if (reloadForm) {
-        reloadForm.addEventListener('submit', e => { e.preventDefault(); reload(false); });
-        if ('autoReload' in root.dataset) reload(true);
+    /* ---------- Old quotes / ticker list: reloaded in the background ---------- */
+    // data-auto-reload="<request key>" is set by the server when the data is old (app/auto_reload.py).
+    // The server checks again and limits retries; with fresh data the page is shown again.
+    if (root.dataset.autoReload) {
+        post({ [root.dataset.autoReload]: 1 })
+            .then(data => { if (data.success) window.location.reload(); })
+            .catch(err => console.error('Error reloading quotes:', err));
     }
 
     /* ---------- Search box ---------- */
